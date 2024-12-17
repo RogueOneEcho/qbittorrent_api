@@ -36,7 +36,7 @@ impl QBittorrentClientFactory {
             .rate_limit(rate_count, rate_duration)
             .service(client);
         QBittorrentClient {
-            host: format!("{}/json", self.options.host),
+            host: self.options.host.clone(),
             cookies,
             username: self.options.username.clone(),
             password: self.options.password.clone(),

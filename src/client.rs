@@ -1,6 +1,6 @@
-use crate::Response;
 #[cfg(test)]
 use crate::{QBittorrentClientFactory, QBittorrentClientOptions};
+use crate::{Response, Status};
 use colored::Colorize;
 use log::*;
 use reqwest::cookie::Jar;
@@ -38,22 +38,31 @@ impl QBittorrentClient {
         endpoint: &str,
         data: &[(&str, &str)],
     ) -> Result<reqwest::Response, Error> {
-        trace!("{} request {method} /{endpoint}", "Sending".bold());
-        let url = format!("{}/{endpoint}", self.host);
+        trace!("{} request {method} {endpoint}", "Sending".bold());
+        let url = format!("{}/api/v2{endpoint}", self.host);
         let client = self.wait_for_client().await;
         let start = SystemTime::now();
-        let result = client
-            .request(method.clone(), url)
-            .query(&data)
-            .send()
-            .await;
+        let request = client.request(method.clone(), url.clone());
+        let request = match method {
+            Method::GET => Ok(request.query(data)),
+            Method::POST => Ok(request.form(data)),
+            _ => {
+                return Err(Error {
+                    action: format!("send {method} {endpoint} request"),
+                    domain: Some(DOMAIN.to_owned()),
+                    message: format!("Method {method} is not supported"),
+                    ..Error::default()
+                })
+            }
+        }?;
+        let result = request.send().await;
         let elapsed = start
             .elapsed()
             .expect("elapsed should not fail")
             .as_secs_f64();
         trace!("{} response after {elapsed:.3}", "Received".bold());
         result.map_err(|e| Error {
-            action: format!("send {method} /{endpoint} request"),
+            action: format!("send {method} {endpoint} request"),
             domain: Some(DOMAIN.to_owned()),
             message: e.to_string(),
             ..Error::default()
@@ -80,6 +89,22 @@ impl QBittorrentClient {
     }
 }
 
+pub(crate) async fn handle_status_response(
+    method: Method,
+    endpoint: &str,
+    response: reqwest::Response,
+) -> Result<Status, Error> {
+    let status_code = Some(response.status().as_u16());
+    let text = response.text().await.map_err(|e| Error {
+        action: format!("get response body of {method} {endpoint} request"),
+        domain: Some(DOMAIN.to_owned()),
+        message: e.to_string(),
+        status_code,
+        ..Error::default()
+    })?;
+    Ok(Status::from(text.as_str()))
+}
+
 pub(crate) async fn deserialize_response<T: DeserializeOwned>(
     method: Method,
     endpoint: &str,
@@ -87,12 +112,15 @@ pub(crate) async fn deserialize_response<T: DeserializeOwned>(
 ) -> Result<Response<T>, Error> {
     let status_code = Some(response.status().as_u16());
     let json = response.text().await.map_err(|e| Error {
-        action: format!("get response body of {method} /{endpoint} request"),
+        action: format!("get response body of {method} {endpoint} request"),
         domain: Some(DOMAIN.to_owned()),
         message: e.to_string(),
         status_code,
         ..Error::default()
     })?;
+    println!("json");
+    println!("{json}");
+    println!("end");
     match serde_json::from_str::<Response<T>>(&json) {
         Ok(mut response) => {
             response.status_code = status_code;
@@ -101,7 +129,7 @@ pub(crate) async fn deserialize_response<T: DeserializeOwned>(
         Err(e) => {
             trace!("{json}");
             Err(Error {
-                action: format!("deserialize response of {DOMAIN} {method} /{endpoint} request"),
+                action: format!("deserialize response of {DOMAIN} {method} {endpoint} request"),
                 domain: Some("deserialization".to_owned()),
                 message: e.to_string(),
                 status_code,
