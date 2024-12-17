@@ -6,7 +6,7 @@ pub use status::*;
 
 mod client;
 mod factory;
-mod get_torrents;
+pub mod get_torrents;
 pub mod login;
 mod options;
 mod response;
