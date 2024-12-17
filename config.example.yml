@@ -1,0 +1,7 @@
+host: "http://example.com:8112"
+username: YOUR_QBITTORRENT_USERNAME
+password: YOUR_QBITTORRENT_PASSWORD
+user_agent: rust_qbittorrent_api
+rate_limit_count: 10
+rate_limit_duration: 10
+torrent_id: EXAMPLE_TORRENT_ID
