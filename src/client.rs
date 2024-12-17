@@ -7,6 +7,7 @@ use reqwest::cookie::Jar;
 use reqwest::{Client, Method};
 use rogue_logging::Error;
 use serde::de::DeserializeOwned;
+use serde::Serialize;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 use tower::limit::RateLimit;
@@ -32,11 +33,11 @@ impl QBittorrentClient {
         factory.create()
     }
 
-    pub(crate) async fn request(
+    pub(crate) async fn request<T: Serialize>(
         &mut self,
         method: Method,
         endpoint: &str,
-        data: &[(&str, &str)],
+        data: T,
     ) -> Result<reqwest::Response, Error> {
         trace!("{} request {method} {endpoint}", "Sending".bold());
         let url = format!("{}/api/v2{endpoint}", self.host);
@@ -44,8 +45,8 @@ impl QBittorrentClient {
         let start = SystemTime::now();
         let request = client.request(method.clone(), url.clone());
         let request = match method {
-            Method::GET => Ok(request.query(data)),
-            Method::POST => Ok(request.form(data)),
+            Method::GET => Ok(request.query(&data)),
+            Method::POST => Ok(request.form(&data)),
             _ => {
                 return Err(Error {
                     action: format!("send {method} {endpoint} request"),
@@ -118,14 +119,11 @@ pub(crate) async fn deserialize_response<T: DeserializeOwned>(
         status_code,
         ..Error::default()
     })?;
-    println!("json");
-    println!("{json}");
-    println!("end");
-    match serde_json::from_str::<Response<T>>(&json) {
-        Ok(mut response) => {
-            response.status_code = status_code;
-            Ok(response)
-        }
+    match serde_json::from_str::<T>(&json) {
+        Ok(result) => Ok(Response {
+            status_code,
+            result: Some(result),
+        }),
         Err(e) => {
             trace!("{json}");
             Err(Error {

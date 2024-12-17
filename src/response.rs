@@ -2,14 +2,11 @@ use crate::client::DOMAIN;
 use reqwest::StatusCode;
 use rogue_logging::Error;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Response<T> {
     pub status_code: Option<u16>,
     pub result: Option<T>,
-    pub error: Option<Value>,
-    pub id: Option<usize>,
 }
 
 impl<T: Serialize> Response<T> {
@@ -21,15 +18,6 @@ impl<T: Serialize> Response<T> {
     /// - Status code is not valid
     /// - Status code is not successful
     pub fn get_result(self, action: &str) -> Result<T, Error> {
-        if let Some(error) = self.error.clone() {
-            return Err(Error {
-                action: action.to_owned(),
-                domain: Some(DOMAIN.to_owned()),
-                message: format!("{error}"),
-                status_code: self.status_code,
-                ..Error::default()
-            });
-        }
         let status_code_num = self.status_code.ok_or_else(|| Error {
             action: action.to_owned(),
             domain: Some(DOMAIN.to_owned()),
