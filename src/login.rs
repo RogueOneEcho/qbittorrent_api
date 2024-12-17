@@ -7,7 +7,7 @@ impl QBittorrentClient {
     /// Login and get a session cookie
     ///
     /// # See Also
-    /// - <https://deluge.readthedocs.io/en/latest/devguide/how-to/curl-jsonrpc.html>
+    /// - <https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)#login>
     pub async fn login(&mut self) -> Result<Status, Error> {
         let method = Method::POST;
         let endpoint = "/auth/login";

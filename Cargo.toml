@@ -1,11 +1,11 @@
 [package]
-name = "deluge_api"
+name = "qbittorrent_api"
 version = "0.0.0"
 edition = "2021"
 publish = true
 authors = ["RogueOneEcho"]
-description = "Deluge API Client"
-repository = "https://github.com/RogueOneEcho/deluge_api"
+description = "qBittorrent API Client"
+repository = "https://github.com/RogueOneEcho/qbittorrent_api"
 license = "AGPL-3.0-only"
 include = [
     "src/**/*",

@@ -259,21 +259,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
 
 [[package]]
-name = "deluge_api"
-version = "0.0.0"
-dependencies = [
- "colored",
- "log",
- "reqwest",
- "rogue_config",
- "rogue_logging",
- "serde",
- "serde_json",
- "tokio",
- "tower",
-]
-
-[[package]]
 name = "deranged"
 version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -911,6 +896,21 @@ checksum = "6f42ea446cab60335f76979ec15e12619a2165b5ae2c12166bef27d283a9fadf"
 dependencies = [
  "idna",
  "psl-types",
+]
+
+[[package]]
+name = "qbittorrent_api"
+version = "0.0.0"
+dependencies = [
+ "colored",
+ "log",
+ "reqwest",
+ "rogue_config",
+ "rogue_logging",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tower",
 ]
 
 [[package]]
