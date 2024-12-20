@@ -292,7 +292,6 @@ pub enum State {
     Unknown,
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
