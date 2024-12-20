@@ -70,7 +70,7 @@ impl QBittorrentClient {
         })
     }
 
-    async fn wait_for_client(&mut self) -> &Client {
+    pub(crate) async fn wait_for_client(&mut self) -> &Client {
         let start = SystemTime::now();
         let client = self
             .client

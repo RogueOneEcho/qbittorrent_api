@@ -4,6 +4,7 @@ pub use options::*;
 pub use response::*;
 pub use status::*;
 
+mod add_torrent;
 mod client;
 mod factory;
 pub mod get_torrents;
