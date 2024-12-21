@@ -126,7 +126,10 @@ impl AddTorrentOptions {
             form = form.text("skip_checking", skip_checking.to_string());
         }
         if let Some(paused) = self.paused {
+            // `stopped` replaces `paused` in `v5.0.0`
+            // https://github.com/qbittorrent/qBittorrent/issues/21561#issuecomment-2558072321
             form = form.text("paused", paused.to_string());
+            form = form.text("stopped", paused.to_string());
         }
         if let Some(root_folder) = self.root_folder {
             form = form.text("root_folder", root_folder.to_string());
@@ -205,7 +208,9 @@ mod tests {
         ];
         let options = AddTorrentOptions {
             save_path: Some("/srv/shared/tests".to_owned()),
-            category: Some("uploaded".to_owned()),
+            category: Some("example".to_owned()),
+            paused: Some(true),
+            skip_checking: Some(true),
             ..AddTorrentOptions::default()
         };
 

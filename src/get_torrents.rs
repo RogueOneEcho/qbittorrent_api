@@ -244,7 +244,16 @@ pub enum State {
     Uploading,
 
     /// Torrent is paused and has finished downloading.
+    ///
+    /// Replaced by [`StoppedUP`] in `v5.0.0`
+    /// <https://github.com/qbittorrent/qBittorrent/issues/21561#issuecomment-2558072321>
     PausedUP,
+
+    /// Torrent is stopped and has finished downloading.
+    ///
+    /// Replaces [`PausedUP`] in `v5.0.0`
+    /// <https://github.com/qbittorrent/qBittorrent/issues/21561#issuecomment-2558072321>
+    StoppedUP,
 
     /// Queuing is enabled and torrent is queued for upload.
     QueuedUP,
@@ -268,7 +277,16 @@ pub enum State {
     MetaDL,
 
     /// Torrent is paused and has NOT finished downloading.
+    ///
+    /// Replaced by [`StoppedDL`] in `v5.0.0`
+    /// <https://github.com/qbittorrent/qBittorrent/issues/21561#issuecomment-2558072321>
     PausedDL,
+
+    /// Torrent is stopped and has NOT finished downloading.
+    ///
+    /// Replaces [`PausedDL`] in `v5.0.0`
+    /// <https://github.com/qbittorrent/qBittorrent/issues/21561#issuecomment-2558072321>
+    StoppedDL,
 
     /// Queuing is enabled and torrent is queued for download.
     QueuedDL,
@@ -311,6 +329,7 @@ mod tests {
         let mut client = QBittorrentClient::from_options(options);
         let filters = FilterOptions {
             limit: Some(20),
+            category: Some("example".to_owned()),
             ..FilterOptions::default()
         };
 
