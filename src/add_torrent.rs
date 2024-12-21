@@ -12,11 +12,27 @@ use std::path::PathBuf;
 use std::time::SystemTime;
 
 impl QBittorrentClient {
+    /// Add torrent from file
+    ///
+    /// # See Also
+    /// - <https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)#add-new-torrent>
+    pub async fn add_torrent(
+        &mut self,
+        options: AddTorrentOptions,
+        torrent: PathBuf,
+    ) -> Result<Response<bool>, Error> {
+        self.add_torrents(options, vec![torrent]).await
+    }
+
     /// Add torrents from file
     ///
     /// # See Also
     /// - <https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)#add-new-torrent>
-    pub async fn add_torrent(&mut self, torrent: Torrent) -> Result<Response<bool>, Error> {
+    pub async fn add_torrents(
+        &mut self,
+        options: AddTorrentOptions,
+        torrents: Vec<PathBuf>,
+    ) -> Result<Response<bool>, Error> {
         let method = Method::POST;
         let endpoint = "/torrents/add";
         let url = format!("{}/api/v2{endpoint}", self.host);
@@ -24,7 +40,7 @@ impl QBittorrentClient {
         let start = SystemTime::now();
         let request = client
             .request(method.clone(), url.clone())
-            .multipart(torrent.to_form()?);
+            .multipart(options.to_form(torrents)?);
         let result = request.send().await;
         let elapsed = start
             .elapsed()
@@ -46,10 +62,7 @@ impl QBittorrentClient {
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
-pub struct Torrent {
-    /// Path of the .torrent file
-    pub path: PathBuf,
-
+pub struct AddTorrentOptions {
     /// Path to the downloads folder the torrent content is stored in
     pub save_path: Option<String>,
 
@@ -93,10 +106,13 @@ pub struct Torrent {
     pub first_last_piece_priority: Option<bool>,
 }
 
-impl Torrent {
+impl AddTorrentOptions {
     #[allow(clippy::wrong_self_convention)]
-    pub fn to_form(self) -> Result<Form, Error> {
-        let mut form = Form::new().part("torrents", self.get_torrent_part()?);
+    pub fn to_form(self, torrents: Vec<PathBuf>) -> Result<Form, Error> {
+        let mut form = Form::new();
+        for torrent in torrents {
+            form = form.part("torrents", get_torrent_part(torrent)?);
+        }
         if let Some(save_path) = &self.save_path {
             form = form.text("savepath", save_path.clone());
         }
@@ -141,28 +157,27 @@ impl Torrent {
         }
         Ok(form)
     }
+}
 
-    fn get_torrent_part(&self) -> Result<Part, Error> {
-        let action = "add torrent";
-        let mut file = File::open(&self.path).map_err(|e| Error {
-            action: action.to_owned(),
-            message: e.to_string(),
-            ..Error::default()
-        })?;
-        let mut buffer = Vec::new();
-        let _size = file.read_to_end(&mut buffer).map_err(|e| Error {
-            action: action.to_owned(),
-            message: e.to_string(),
-            ..Error::default()
-        })?;
-        let filename = self
-            .path
-            .file_name()
-            .expect("file should have a name")
-            .to_string_lossy()
-            .to_string();
-        Ok(Part::bytes(buffer).file_name(filename))
-    }
+fn get_torrent_part(path: PathBuf) -> Result<Part, Error> {
+    let action = "add torrent";
+    let mut file = File::open(&path).map_err(|e| Error {
+        action: action.to_owned(),
+        message: e.to_string(),
+        ..Error::default()
+    })?;
+    let mut buffer = Vec::new();
+    let _size = file.read_to_end(&mut buffer).map_err(|e| Error {
+        action: action.to_owned(),
+        message: e.to_string(),
+        ..Error::default()
+    })?;
+    let filename = path
+        .file_name()
+        .expect("file should have a name")
+        .to_string_lossy()
+        .to_string();
+    Ok(Part::bytes(buffer).file_name(filename))
 }
 
 #[cfg(test)]
@@ -184,17 +199,20 @@ mod tests {
             .create();
         let options: QBittorrentClientOptions = YamlOptionsProvider::get()?;
         let mut client = QBittorrentClient::from_options(options);
-        let torrent = Torrent {
-            path: PathBuf::from("/srv/shared/tests/example-1.torrent"),
+        let torrents = vec![
+            PathBuf::from("/srv/shared/tests/example-1.torrent"),
+            PathBuf::from("/srv/shared/tests/example-2.torrent"),
+        ];
+        let options = AddTorrentOptions {
             save_path: Some("/srv/shared/tests".to_owned()),
             category: Some("uploaded".to_owned()),
-            ..Torrent::default()
+            ..AddTorrentOptions::default()
         };
 
         // Act
         let response = client.login().await?;
         trace!("{response:?}");
-        let response = client.add_torrent(torrent).await?;
+        let response = client.add_torrents(options, torrents).await?;
         trace!("{}", response.to_json_pretty());
 
         // Assert
