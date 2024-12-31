@@ -16,15 +16,15 @@ include = [
 ]
 
 [dependencies]
-colored = "^2.1"
-log = { version = "^0.4", features = ["std"] }
-reqwest = { version = "^0.12", features = ["rustls-tls", "json", "multipart", "stream", "cookies"], default-features = false }
-rogue_logging = "^0.3"
-serde = { version = "^1.0", features = ["derive"] }
-serde_json = "^1"
-tokio = { version = "^1", features = ["full"] }
-tower = { version = "^0.5", features = ["util", "limit"] }
-rogue_config = "0.1.0"
+colored = "2.2.0"
+log = { version = "0.4.22", features = ["std"] }
+reqwest = { version = "0.12.9", features = ["rustls-tls", "json", "multipart", "stream", "cookies"], default-features = false }
+rogue_logging = "0.3.0"
+serde = { version = "1.0.217", features = ["derive"] }
+serde_json = "1.0.134"
+tokio = { version = "1.42.0", features = ["full"] }
+tower = { version = "0.5.2", features = ["util", "limit"] }
+rogue_config = "0.1.1"
 
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }
@@ -78,8 +78,5 @@ unwrap_used = "warn"
 wildcard_enum_match_arm = "allow"
 wildcard_imports = "allow"
 wrong_self_convention = "allow"
-# TODO COULD re-consider the following allows:
 result_large_err = "allow"
-
-# TODO SHOULD investigate solution to await_holding_lock
 await_holding_lock = "allow"
