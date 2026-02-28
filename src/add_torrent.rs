@@ -193,7 +193,7 @@ mod tests {
     use rogue_logging::{Error, LoggerBuilder};
 
     #[tokio::test]
-    #[ignore]
+    #[ignore = "integration test requiring API credentials"]
     async fn add_torrents() -> Result<(), Error> {
         // Arrange
         let _ = LoggerBuilder::new()
