@@ -31,17 +31,20 @@ mod tests {
     use reqwest::Url;
     use rogue_config::{OptionsProvider, YamlOptionsProvider};
     use rogue_logging::Verbosity::Trace;
-    use rogue_logging::{Error, LoggerBuilder};
+    use rogue_logging::{InitLog, LoggerBuilder};
+    use std::error::Error;
 
     #[tokio::test]
-    async fn login() -> Result<(), Error> {
+    async fn login() -> Result<(), Box<dyn Error>> {
         // Arrange
-        let _ = LoggerBuilder::new()
+        LoggerBuilder::new()
             .with_exclude_filter("reqwest".to_owned())
             .with_exclude_filter("cookie".to_owned())
             .with_verbosity(Trace)
-            .create();
-        let options: QBittorrentClientOptions = YamlOptionsProvider::get()?;
+            .create()
+            .init();
+        let options: QBittorrentClientOptions =
+            YamlOptionsProvider::get().map_err(|e| e.to_string())?;
         let mut client = QBittorrentClient::from_options(options);
 
         // Act

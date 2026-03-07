@@ -316,16 +316,19 @@ mod tests {
     use crate::QBittorrentClientOptions;
     use log::trace;
     use rogue_config::{OptionsProvider, YamlOptionsProvider};
-    use rogue_logging::{Error, LoggerBuilder};
+    use rogue_logging::{InitLog, LoggerBuilder};
+    use std::error::Error;
 
     #[tokio::test]
-    async fn get_torrents() -> Result<(), Error> {
+    async fn get_torrents() -> Result<(), Box<dyn Error>> {
         // Arrange
-        let _ = LoggerBuilder::new()
+        LoggerBuilder::new()
             .with_exclude_filter("reqwest".to_owned())
             .with_exclude_filter("cookie".to_owned())
-            .create();
-        let options: QBittorrentClientOptions = YamlOptionsProvider::get()?;
+            .create()
+            .init();
+        let options: QBittorrentClientOptions =
+            YamlOptionsProvider::get().map_err(|e| e.to_string())?;
         let mut client = QBittorrentClient::from_options(options);
         let filters = FilterOptions {
             limit: Some(20),
