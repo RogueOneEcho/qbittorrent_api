@@ -365,6 +365,7 @@ pub enum State {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::indexing_slicing, clippy::float_cmp)]
 mod tests {
     use super::*;
     use crate::tests::init_logger;
@@ -373,7 +374,10 @@ mod tests {
     use rogue_config::{OptionsProvider, YamlOptionsProvider};
     use std::error::Error;
 
+    const FIXTURE: &str = include_str!("tests/fixtures/torrents_response.json");
+
     #[tokio::test]
+    #[ignore = "integration test requiring API credentials"]
     async fn get_torrents() -> Result<(), Box<dyn Error>> {
         // Arrange
         init_logger();
@@ -396,5 +400,44 @@ mod tests {
         let result = response.get_result("get_torrents")?;
         assert!(!result.is_empty());
         Ok(())
+    }
+
+    #[test]
+    fn deserialize_torrents_from_fixture() {
+        let torrents: Vec<Torrent> = serde_json::from_str(FIXTURE).unwrap();
+        assert_eq!(torrents.len(), 2);
+        assert_eq!(torrents[0].name, "Artist - Album [2023] [WEB FLAC]");
+        assert_eq!(torrents[0].state, State::StalledUP);
+        assert!(torrents[0].is_private.is_none());
+        assert_eq!(torrents[1].name, "Band - Live Sessions [2024] [WEB FLAC]");
+        assert_eq!(torrents[1].state, State::Downloading);
+    }
+
+    #[test]
+    fn deserialize_torrent_numeric_fields() {
+        let torrents: Vec<Torrent> = serde_json::from_str(FIXTURE).unwrap();
+        let torrent = &torrents[0];
+        assert_eq!(torrent.added_on, 1_700_000_000);
+        assert_eq!(torrent.completed, 104_857_600);
+        assert_eq!(torrent.size, 104_857_600);
+        assert_eq!(torrent.uploaded, 262_144_000);
+        assert_eq!(torrent.ratio, 2.5);
+        assert_eq!(torrent.progress, 1.0);
+    }
+
+    #[test]
+    fn serialize_filter_options() {
+        let filters = FilterOptions {
+            filter: Some(FilterState::Seeding),
+            category: Some("music".to_owned()),
+            limit: Some(10),
+            ..FilterOptions::default()
+        };
+        let json = serde_json::to_value(&filters).unwrap();
+        assert_eq!(json["filter"], "seeding");
+        assert_eq!(json["category"], "music");
+        assert_eq!(json["limit"], 10);
+        assert!(json.get("tag").is_none());
+        assert!(json.get("sort").is_none());
     }
 }

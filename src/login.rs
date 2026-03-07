@@ -34,6 +34,7 @@ mod tests {
     use std::error::Error;
 
     #[tokio::test]
+    #[ignore = "integration test requiring API credentials"]
     async fn login() -> Result<(), Box<dyn Error>> {
         // Arrange
         init_logger();

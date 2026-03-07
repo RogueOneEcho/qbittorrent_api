@@ -56,3 +56,49 @@ impl<T: Serialize> Response<T> {
         serde_json::to_string_pretty(self).unwrap_or_else(|e| e.to_string())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn get_result_success() {
+        let response: Response<bool> = Response {
+            status_code: Some(200),
+            result: Some(true),
+        };
+        let result = response.get_result("test");
+        assert!(result.is_ok());
+        assert!(result.expect("should be ok"));
+    }
+
+    #[test]
+    fn get_result_missing_status_code() {
+        let response: Response<bool> = Response {
+            status_code: None,
+            result: Some(true),
+        };
+        let result = response.get_result("test");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn get_result_failure_status_code() {
+        let response: Response<bool> = Response {
+            status_code: Some(403),
+            result: Some(false),
+        };
+        let result = response.get_result("test");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn get_result_missing_result() {
+        let response: Response<bool> = Response {
+            status_code: Some(200),
+            result: None,
+        };
+        let result = response.get_result("test");
+        assert!(result.is_err());
+    }
+}

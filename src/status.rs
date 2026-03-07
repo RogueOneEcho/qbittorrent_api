@@ -17,3 +17,26 @@ impl From<&str> for Status {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn status_from_ok() {
+        assert_eq!(Status::from("Ok."), Success);
+    }
+
+    #[test]
+    fn status_from_fails() {
+        assert_eq!(Status::from("Fails."), Failure);
+    }
+
+    #[test]
+    fn status_from_other() {
+        assert_eq!(
+            Status::from("something else"),
+            Other("something else".to_owned())
+        );
+    }
+}
