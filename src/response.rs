@@ -3,7 +3,7 @@ use reqwest::StatusCode;
 use rogue_logging::Failure;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Response<T> {
     pub status_code: Option<u16>,
     pub result: Option<T>,

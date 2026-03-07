@@ -1,6 +1,11 @@
+use async_trait::async_trait;
+use std::path::PathBuf;
+
+use crate::add_torrent::{AddTorrentAction, AddTorrentOptions};
+use crate::get_torrents::{FilterOptions, Torrent};
 #[cfg(test)]
 use crate::{QBittorrentClientFactory, QBittorrentClientOptions};
-use crate::{Response, Status};
+use crate::{QBittorrentClientTrait, Response, Status};
 use colored::Colorize;
 use log::*;
 use reqwest::cookie::Jar;
@@ -109,6 +114,33 @@ pub(crate) async fn deserialize_response<T: DeserializeOwned>(
                 .with("endpoint", endpoint)
                 .with("status_code", status_code.to_string()))
         }
+    }
+}
+
+#[async_trait]
+impl QBittorrentClientTrait for QBittorrentClient {
+    async fn login(&mut self) -> Result<Status, Failure<ClientAction>> {
+        QBittorrentClient::login(self).await
+    }
+    async fn get_torrents(
+        &mut self,
+        filters: FilterOptions,
+    ) -> Result<Response<Vec<Torrent>>, Failure<ClientAction>> {
+        QBittorrentClient::get_torrents(self, filters).await
+    }
+    async fn add_torrent(
+        &mut self,
+        options: AddTorrentOptions,
+        torrent: PathBuf,
+    ) -> Result<Response<bool>, Failure<AddTorrentAction>> {
+        QBittorrentClient::add_torrent(self, options, torrent).await
+    }
+    async fn add_torrents(
+        &mut self,
+        options: AddTorrentOptions,
+        torrents: Vec<PathBuf>,
+    ) -> Result<Response<bool>, Failure<AddTorrentAction>> {
+        QBittorrentClient::add_torrents(self, options, torrents).await
     }
 }
 

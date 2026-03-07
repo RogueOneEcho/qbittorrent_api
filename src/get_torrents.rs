@@ -83,7 +83,7 @@ pub enum FilterState {
 }
 
 /// Represents detailed information about a torrent.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct Torrent {
     /// Time (Unix Epoch) when the torrent was added to the client.
@@ -226,8 +226,66 @@ pub struct Torrent {
     pub upspeed: u64,
 }
 
+#[cfg(feature = "mock")]
+impl Torrent {
+    /// Create a mock `Torrent` for testing
+    #[must_use]
+    pub fn mock() -> Self {
+        Self {
+            added_on: 1_700_000_000,
+            amount_left: 0,
+            auto_tmm: false,
+            availability: -1.0,
+            category: "music".to_owned(),
+            completed: 104_857_600,
+            completion_on: 1_700_000_120,
+            content_path: "/downloads/Artist - Album [2023] [WEB FLAC]".to_owned(),
+            dl_limit: 0,
+            dlspeed: 0,
+            downloaded: 104_857_600,
+            downloaded_session: 0,
+            eta: 8_640_000,
+            f_l_piece_prio: false,
+            force_start: false,
+            hash: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2".to_owned(),
+            is_private: None,
+            last_activity: 1_700_100_000,
+            magnet_uri:
+                "magnet:?xt=urn:btih:a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2&dn=Artist+-+Album"
+                    .to_owned(),
+            max_ratio: -1.0,
+            max_seeding_time: -1,
+            name: "Artist - Album [2023] [WEB FLAC]".to_owned(),
+            num_complete: 12,
+            num_incomplete: 2,
+            num_leechs: 1,
+            num_seeds: 0,
+            priority: 0,
+            progress: 1.0,
+            ratio: 2.5,
+            ratio_limit: -2.0,
+            save_path: "/downloads".to_owned(),
+            seeding_time: 86_400,
+            seeding_time_limit: -2,
+            seen_complete: 1_700_050_000,
+            seq_dl: false,
+            size: 104_857_600,
+            state: State::StalledUP,
+            super_seeding: false,
+            tags: String::new(),
+            time_active: 86_520,
+            total_size: 104_857_600,
+            tracker: "https://tracker.example.com/announce".to_owned(),
+            up_limit: 0,
+            uploaded: 262_144_000,
+            uploaded_session: 0,
+            upspeed: 0,
+        }
+    }
+}
+
 /// Represents the various states a torrent can be in.
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum State {
     /// Some error occurred, applies to paused torrents.

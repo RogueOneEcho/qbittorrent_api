@@ -15,6 +15,9 @@ include = [
     "README.md"
 ]
 
+[features]
+mock = []
+
 [dependencies]
 async-trait = "0.1.89"
 colored = "3.1.1"
