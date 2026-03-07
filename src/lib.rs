@@ -12,3 +12,5 @@ pub mod login;
 mod options;
 mod response;
 mod status;
+#[cfg(test)]
+mod tests;

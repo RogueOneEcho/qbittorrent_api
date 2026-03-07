@@ -201,22 +201,18 @@ fn get_torrent_part(path: PathBuf) -> Result<Part, Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::tests::init_logger;
     use crate::QBittorrentClientOptions;
     use log::trace;
     use rogue_config::OptionsProvider;
     use rogue_config::YamlOptionsProvider;
-    use rogue_logging::{InitLog, LoggerBuilder};
     use std::error::Error;
 
     #[tokio::test]
     #[ignore = "integration test requiring API credentials"]
     async fn add_torrents() -> Result<(), Box<dyn Error>> {
         // Arrange
-        LoggerBuilder::new()
-            .with_exclude_filter("reqwest".to_owned())
-            .with_exclude_filter("cookie".to_owned())
-            .create()
-            .init();
+        init_logger();
         let options: QBittorrentClientOptions =
             YamlOptionsProvider::get().map_err(|e| e.to_string())?;
         let mut client = QBittorrentClient::from_options(options);

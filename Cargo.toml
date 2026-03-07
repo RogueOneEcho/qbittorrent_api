@@ -30,7 +30,6 @@ tower = { version = "0.5.3", features = ["util", "limit"] }
 [dev-dependencies]
 rogue_config = "0.2.0"
 rogue_logging = { version = "0.7.1", features = ["log"] }
-serial_test = "3.4.0"
 
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }
