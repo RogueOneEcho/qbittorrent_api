@@ -10,6 +10,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
 use std::time::SystemTime;
+use tower::{Service, ServiceExt};
 
 impl QBittorrentClient {
     /// Add torrent from file
@@ -36,12 +37,26 @@ impl QBittorrentClient {
         let method = Method::POST;
         let endpoint = "/torrents/add";
         let url = format!("{}/api/v2{endpoint}", self.host);
-        let client = self.wait_for_client().await;
-        let start = SystemTime::now();
-        let request = client
+        let request = self
+            .client
+            .get_ref()
             .request(method.clone(), url.clone())
-            .multipart(options.to_form(torrents)?);
-        let result = request.send().await;
+            .multipart(options.to_form(torrents)?)
+            .build()
+            .map_err(|e| Error {
+                action: format!("send {method} {endpoint} request"),
+                domain: Some(DOMAIN.to_owned()),
+                message: e.to_string(),
+                ..Error::default()
+            })?;
+        let start = SystemTime::now();
+        let result = self
+            .client
+            .ready()
+            .await
+            .expect("rate limiter should be available")
+            .call(request)
+            .await;
         let elapsed = start
             .elapsed()
             .expect("elapsed should not fail")

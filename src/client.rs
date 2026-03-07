@@ -9,15 +9,15 @@ use rogue_logging::Error;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::sync::Arc;
-use std::time::{Duration, SystemTime};
+use std::time::SystemTime;
 use tower::limit::RateLimit;
-use tower::ServiceExt;
+use tower::{Service, ServiceExt};
 
 pub(crate) const DOMAIN: &str = "qBittorrent API";
 
-/// A client for the Deluge API
+/// A client for the qBittorrent API
 ///
-/// Created by an [`QBittorrentClientFactory`]
+/// Created by a [`QBittorrentClientFactory`]
 pub struct QBittorrentClient {
     pub host: String,
     pub username: String,
@@ -41,12 +41,10 @@ impl QBittorrentClient {
     ) -> Result<reqwest::Response, Error> {
         trace!("{} request {method} {endpoint}", "Sending".bold());
         let url = format!("{}/api/v2{endpoint}", self.host);
-        let client = self.wait_for_client().await;
-        let start = SystemTime::now();
-        let request = client.request(method.clone(), url.clone());
+        let request_builder = self.client.get_ref().request(method.clone(), url.clone());
         let request = match method {
-            Method::GET => Ok(request.query(&data)),
-            Method::POST => Ok(request.form(&data)),
+            Method::GET => Ok(request_builder.query(&data)),
+            Method::POST => Ok(request_builder.form(&data)),
             _ => {
                 return Err(Error {
                     action: format!("send {method} {endpoint} request"),
@@ -56,7 +54,20 @@ impl QBittorrentClient {
                 })
             }
         }?;
-        let result = request.send().await;
+        let request = request.build().map_err(|e| Error {
+            action: format!("send {method} {endpoint} request"),
+            domain: Some(DOMAIN.to_owned()),
+            message: e.to_string(),
+            ..Error::default()
+        })?;
+        let start = SystemTime::now();
+        let result = self
+            .client
+            .ready()
+            .await
+            .expect("rate limiter should be available")
+            .call(request)
+            .await;
         let elapsed = start
             .elapsed()
             .expect("elapsed should not fail")
@@ -68,25 +79,6 @@ impl QBittorrentClient {
             message: e.to_string(),
             ..Error::default()
         })
-    }
-
-    pub(crate) async fn wait_for_client(&mut self) -> &Client {
-        let start = SystemTime::now();
-        let client = self
-            .client
-            .ready()
-            .await
-            .expect("client should be available")
-            .get_ref();
-        let duration = start.elapsed().expect("duration should not fail");
-        if duration > Duration::from_millis(200) {
-            trace!(
-                "{} {:.3} for rate limiter",
-                "Waited".bold(),
-                duration.as_secs_f64()
-            );
-        }
-        client
     }
 }
 
