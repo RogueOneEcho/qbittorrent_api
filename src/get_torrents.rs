@@ -1,8 +1,8 @@
-use crate::client::deserialize_response;
+use crate::client::{deserialize_response, ClientAction};
 use crate::QBittorrentClient;
 use crate::Response;
 use reqwest::Method;
-use rogue_logging::Error;
+use rogue_logging::Failure;
 use serde::{Deserialize, Serialize};
 
 impl QBittorrentClient {
@@ -13,15 +13,11 @@ impl QBittorrentClient {
     pub async fn get_torrents(
         &mut self,
         filters: FilterOptions,
-    ) -> Result<Response<Vec<Torrent>>, Error> {
+    ) -> Result<Response<Vec<Torrent>>, Failure<ClientAction>> {
         let method = Method::GET;
         let endpoint = "/torrents/info";
         let response = self.request(method.clone(), endpoint, &filters).await?;
-        let response = deserialize_response::<Vec<Torrent>>(method, endpoint, response).await?;
-        Ok(Response {
-            status_code: response.status_code,
-            result: response.result,
-        })
+        deserialize_response::<Vec<Torrent>>(&method, endpoint, response).await
     }
 }
 

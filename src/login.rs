@@ -1,14 +1,14 @@
-use crate::client::handle_status_response;
+use crate::client::{handle_status_response, ClientAction};
 use crate::{QBittorrentClient, Status};
 use reqwest::Method;
-use rogue_logging::Error;
+use rogue_logging::Failure;
 
 impl QBittorrentClient {
     /// Login and get a session cookie
     ///
     /// # See Also
     /// - <https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)#login>
-    pub async fn login(&mut self) -> Result<Status, Error> {
+    pub async fn login(&mut self) -> Result<Status, Failure<ClientAction>> {
         let method = Method::POST;
         let endpoint = "/auth/login";
         let username = self.username.clone();
@@ -18,7 +18,7 @@ impl QBittorrentClient {
             ("password", password.as_str()),
         ];
         let response = self.request(method.clone(), endpoint, &data).await?;
-        handle_status_response(method, endpoint, response).await
+        handle_status_response(&method, endpoint, response).await
     }
 }
 

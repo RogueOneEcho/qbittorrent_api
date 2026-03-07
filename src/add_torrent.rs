@@ -1,15 +1,15 @@
-use crate::client::DOMAIN;
 use crate::{QBittorrentClient, Response};
 use colored::Colorize;
 use log::trace;
 use reqwest::multipart::{Form, Part};
 use reqwest::Method;
-use rogue_logging::Error;
+use rogue_logging::Failure;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
 use std::time::SystemTime;
+use thiserror::Error;
 use tower::{Service, ServiceExt};
 
 impl QBittorrentClient {
@@ -21,7 +21,7 @@ impl QBittorrentClient {
         &mut self,
         options: AddTorrentOptions,
         torrent: PathBuf,
-    ) -> Result<Response<bool>, Error> {
+    ) -> Result<Response<bool>, Failure<AddTorrentAction>> {
         self.add_torrents(options, vec![torrent]).await
     }
 
@@ -33,7 +33,7 @@ impl QBittorrentClient {
         &mut self,
         options: AddTorrentOptions,
         torrents: Vec<PathBuf>,
-    ) -> Result<Response<bool>, Error> {
+    ) -> Result<Response<bool>, Failure<AddTorrentAction>> {
         let method = Method::POST;
         let endpoint = "/torrents/add";
         let url = format!("{}/api/v2{endpoint}", self.host);
@@ -43,12 +43,7 @@ impl QBittorrentClient {
             .request(method.clone(), url.clone())
             .multipart(options.to_form(torrents)?)
             .build()
-            .map_err(|e| Error {
-                action: format!("send {method} {endpoint} request"),
-                domain: Some(DOMAIN.to_owned()),
-                message: e.to_string(),
-                ..Error::default()
-            })?;
+            .map_err(Failure::wrap(AddTorrentAction::BuildRequest))?;
         let start = SystemTime::now();
         let result = self
             .client
@@ -62,12 +57,7 @@ impl QBittorrentClient {
             .expect("elapsed should not fail")
             .as_secs_f64();
         trace!("{} response after {elapsed:.3}", "Received".bold());
-        let response = result.map_err(|e| Error {
-            action: format!("send {method} {endpoint} request"),
-            domain: Some(DOMAIN.to_owned()),
-            message: e.to_string(),
-            ..Error::default()
-        })?;
+        let response = result.map_err(Failure::wrap(AddTorrentAction::SendRequest))?;
         let status = response.status();
         Ok(Response {
             status_code: Some(status.as_u16()),
@@ -80,50 +70,37 @@ impl QBittorrentClient {
 pub struct AddTorrentOptions {
     /// Path to the downloads folder the torrent content is stored in
     pub save_path: Option<String>,
-
     /// Category for the torrent
     pub category: Option<String>,
-
     /// Tags for the torrent, split by ','
     pub tags: Option<Vec<String>>,
-
     /// Skip hash checking
     pub skip_checking: Option<bool>,
-
     /// Add torrents in the paused state.
     pub paused: Option<bool>,
-
     /// Create the root folder.
     pub root_folder: Option<bool>,
-
     /// Rename torrent
     pub rename: Option<String>,
-
     /// Set torrent upload speed limit. Unit in bytes/second
     pub up_limit: Option<usize>,
-
     /// Set torrent download speed limit. Unit in bytes/second
     pub dl_limit: Option<usize>,
-
     /// Set torrent share ratio limit
     pub ratio_limit: Option<f32>,
-
     /// Set torrent seeding time limit. Unit in minutes
     pub seeding_time_limit: Option<usize>,
-
     /// Whether Automatic Torrent Management should be used
     pub automatic_torrent_management: Option<bool>,
-
     /// Enable sequential download
     pub sequential_download: Option<bool>,
-
-    /// Enable sequential download
+    /// Prioritize first and last pieces
     pub first_last_piece_priority: Option<bool>,
 }
 
 impl AddTorrentOptions {
     #[allow(clippy::wrong_self_convention)]
-    pub fn to_form(self, torrents: Vec<PathBuf>) -> Result<Form, Error> {
+    pub fn to_form(self, torrents: Vec<PathBuf>) -> Result<Form, Failure<AddTorrentAction>> {
         let mut form = Form::new();
         for torrent in torrents {
             form = form.part("torrents", get_torrent_part(torrent)?);
@@ -177,25 +154,31 @@ impl AddTorrentOptions {
     }
 }
 
-fn get_torrent_part(path: PathBuf) -> Result<Part, Error> {
-    let action = "add torrent";
-    let mut file = File::open(&path).map_err(|e| Error {
-        action: action.to_owned(),
-        message: e.to_string(),
-        ..Error::default()
-    })?;
+fn get_torrent_part(path: PathBuf) -> Result<Part, Failure<AddTorrentAction>> {
+    let mut file =
+        File::open(&path).map_err(Failure::wrap_with_path(AddTorrentAction::OpenFile, &path))?;
     let mut buffer = Vec::new();
-    let _size = file.read_to_end(&mut buffer).map_err(|e| Error {
-        action: action.to_owned(),
-        message: e.to_string(),
-        ..Error::default()
-    })?;
+    file.read_to_end(&mut buffer)
+        .map_err(Failure::wrap_with_path(AddTorrentAction::ReadFile, &path))?;
     let filename = path
         .file_name()
         .expect("file should have a name")
         .to_string_lossy()
         .to_string();
     Ok(Part::bytes(buffer).file_name(filename))
+}
+
+/// Errors returned by torrent add operations
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Error)]
+pub enum AddTorrentAction {
+    #[error("open torrent file")]
+    OpenFile,
+    #[error("read torrent file")]
+    ReadFile,
+    #[error("build request")]
+    BuildRequest,
+    #[error("send request")]
+    SendRequest,
 }
 
 #[cfg(test)]

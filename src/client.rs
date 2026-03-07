@@ -5,15 +5,14 @@ use colored::Colorize;
 use log::*;
 use reqwest::cookie::Jar;
 use reqwest::{Client, Method};
-use rogue_logging::Error;
+use rogue_logging::Failure;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::sync::Arc;
 use std::time::SystemTime;
+use thiserror::Error;
 use tower::limit::RateLimit;
 use tower::{Service, ServiceExt};
-
-pub(crate) const DOMAIN: &str = "qBittorrent API";
 
 /// A client for the qBittorrent API
 ///
@@ -38,7 +37,7 @@ impl QBittorrentClient {
         method: Method,
         endpoint: &str,
         data: T,
-    ) -> Result<reqwest::Response, Error> {
+    ) -> Result<reqwest::Response, Failure<ClientAction>> {
         trace!("{} request {method} {endpoint}", "Sending".bold());
         let url = format!("{}/api/v2{endpoint}", self.host);
         let request_builder = self.client.get_ref().request(method.clone(), url.clone());
@@ -46,20 +45,14 @@ impl QBittorrentClient {
             Method::GET => Ok(request_builder.query(&data)),
             Method::POST => Ok(request_builder.form(&data)),
             _ => {
-                return Err(Error {
-                    action: format!("send {method} {endpoint} request"),
-                    domain: Some(DOMAIN.to_owned()),
-                    message: format!("Method {method} is not supported"),
-                    ..Error::default()
-                })
+                return Err(Failure::from_action(ClientAction::BuildRequest)
+                    .with("method", method.to_string())
+                    .with("endpoint", endpoint))
             }
         }?;
-        let request = request.build().map_err(|e| Error {
-            action: format!("send {method} {endpoint} request"),
-            domain: Some(DOMAIN.to_owned()),
-            message: e.to_string(),
-            ..Error::default()
-        })?;
+        let request = request
+            .build()
+            .map_err(Failure::wrap(ClientAction::BuildRequest))?;
         let start = SystemTime::now();
         let result = self
             .client
@@ -73,58 +66,63 @@ impl QBittorrentClient {
             .expect("elapsed should not fail")
             .as_secs_f64();
         trace!("{} response after {elapsed:.3}", "Received".bold());
-        result.map_err(|e| Error {
-            action: format!("send {method} {endpoint} request"),
-            domain: Some(DOMAIN.to_owned()),
-            message: e.to_string(),
-            ..Error::default()
-        })
+        result.map_err(Failure::wrap(ClientAction::SendRequest))
     }
 }
 
 pub(crate) async fn handle_status_response(
-    method: Method,
+    method: &Method,
     endpoint: &str,
     response: reqwest::Response,
-) -> Result<Status, Error> {
-    let status_code = Some(response.status().as_u16());
-    let text = response.text().await.map_err(|e| Error {
-        action: format!("get response body of {method} {endpoint} request"),
-        domain: Some(DOMAIN.to_owned()),
-        message: e.to_string(),
-        status_code,
-        ..Error::default()
+) -> Result<Status, Failure<ClientAction>> {
+    let status_code = response.status().as_u16();
+    let text = response.text().await.map_err(|e| {
+        Failure::new(ClientAction::ReadResponseBody, e)
+            .with("method", method.to_string())
+            .with("endpoint", endpoint)
+            .with("status_code", status_code.to_string())
     })?;
     Ok(Status::from(text.as_str()))
 }
 
 pub(crate) async fn deserialize_response<T: DeserializeOwned>(
-    method: Method,
+    method: &Method,
     endpoint: &str,
     response: reqwest::Response,
-) -> Result<Response<T>, Error> {
-    let status_code = Some(response.status().as_u16());
-    let json = response.text().await.map_err(|e| Error {
-        action: format!("get response body of {method} {endpoint} request"),
-        domain: Some(DOMAIN.to_owned()),
-        message: e.to_string(),
-        status_code,
-        ..Error::default()
+) -> Result<Response<T>, Failure<ClientAction>> {
+    let status_code = response.status().as_u16();
+    let json = response.text().await.map_err(|e| {
+        Failure::new(ClientAction::ReadResponseBody, e)
+            .with("method", method.to_string())
+            .with("endpoint", endpoint)
+            .with("status_code", status_code.to_string())
     })?;
     match serde_json::from_str::<T>(&json) {
         Ok(result) => Ok(Response {
-            status_code,
+            status_code: Some(status_code),
             result: Some(result),
         }),
         Err(e) => {
             trace!("{json}");
-            Err(Error {
-                action: format!("deserialize response of {DOMAIN} {method} {endpoint} request"),
-                domain: Some("deserialization".to_owned()),
-                message: e.to_string(),
-                status_code,
-                ..Error::default()
-            })
+            Err(Failure::new(ClientAction::DeserializeResponse, e)
+                .with("method", method.to_string())
+                .with("endpoint", endpoint)
+                .with("status_code", status_code.to_string()))
         }
     }
+}
+
+/// Errors returned by [`QBittorrentClient`] request operations
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Error)]
+pub enum ClientAction {
+    #[error("build request")]
+    BuildRequest,
+    #[error("send request")]
+    SendRequest,
+    #[error("read response body")]
+    ReadResponseBody,
+    #[error("deserialize response")]
+    DeserializeResponse,
+    #[error("validate response")]
+    ValidateResponse,
 }

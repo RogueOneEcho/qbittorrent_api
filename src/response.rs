@@ -1,6 +1,6 @@
-use crate::client::DOMAIN;
+use crate::client::ClientAction;
 use reqwest::StatusCode;
-use rogue_logging::Error;
+use rogue_logging::Failure;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -13,48 +13,41 @@ impl<T: Serialize> Response<T> {
     /// Get the result
     ///
     /// Returns an error if:
-    /// - Error field is some
     /// - Status code is not set
     /// - Status code is not valid
     /// - Status code is not successful
-    pub fn get_result(self, action: &str) -> Result<T, Error> {
-        let status_code_num = self.status_code.ok_or_else(|| Error {
-            action: action.to_owned(),
-            domain: Some(DOMAIN.to_owned()),
-            message: "Status code is not set".to_owned(),
-            status_code: self.status_code,
-            ..Error::default()
+    /// - Result is not set
+    pub fn get_result(self, action: &str) -> Result<T, Failure<ClientAction>> {
+        let status_code_num = self.status_code.ok_or_else(|| {
+            Failure::from_action(ClientAction::ValidateResponse)
+                .with("reason", "status code is not set")
+                .with("action", action)
         })?;
-        let status_code = StatusCode::from_u16(status_code_num).map_err(|_| Error {
-            action: action.to_owned(),
-            domain: Some(DOMAIN.to_owned()),
-            message: "Status code is invalid".to_owned(),
-            status_code: self.status_code,
-            ..Error::default()
+        let status_code = StatusCode::from_u16(status_code_num).map_err(|_| {
+            Failure::from_action(ClientAction::ValidateResponse)
+                .with("reason", "status code is invalid")
+                .with("status_code", status_code_num.to_string())
+                .with("action", action)
         })?;
         if !status_code.is_success() {
             let status_message = match status_code.canonical_reason() {
                 None => status_code_num.to_string(),
                 Some(status_message) => status_message.to_owned(),
             };
-            return Err(Error {
-                action: action.to_owned(),
-                domain: Some(DOMAIN.to_owned()),
-                message: format!("Status code indicated failure: {status_message}"),
-                status_code: self.status_code,
-                ..Error::default()
-            });
+            return Err(Failure::from_action(ClientAction::ValidateResponse)
+                .with(
+                    "reason",
+                    format!("status code indicated failure: {status_message}"),
+                )
+                .with("status_code", status_code_num.to_string())
+                .with("action", action));
         }
         if let Some(result) = self.result {
             Ok(result)
         } else {
-            Err(Error {
-                action: action.to_owned(),
-                domain: Some(DOMAIN.to_owned()),
-                message: "Result is not set".to_owned(),
-                status_code: self.status_code,
-                ..Error::default()
-            })
+            Err(Failure::from_action(ClientAction::ValidateResponse)
+                .with("reason", "result is not set")
+                .with("action", action))
         }
     }
 
