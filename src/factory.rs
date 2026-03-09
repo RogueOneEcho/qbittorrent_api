@@ -18,7 +18,10 @@ pub struct QBittorrentClientFactory {
 
 impl QBittorrentClientFactory {
     #[must_use]
-    #[allow(clippy::as_conversions)]
+    #[expect(
+        clippy::as_conversions,
+        reason = "usize to u64 is safe for small config values"
+    )]
     pub fn create(&self) -> QBittorrentClient {
         let rate_count = self.options.rate_limit_count.unwrap_or(DEFAULT_RATE_COUNT) as u64;
         let rate_duration = self

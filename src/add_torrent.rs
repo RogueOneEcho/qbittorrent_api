@@ -99,7 +99,6 @@ pub struct AddTorrentOptions {
 }
 
 impl AddTorrentOptions {
-    #[allow(clippy::wrong_self_convention)]
     pub fn to_form(self, torrents: Vec<PathBuf>) -> Result<Form, Failure<AddTorrentAction>> {
         let mut form = Form::new();
         for torrent in torrents {

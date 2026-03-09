@@ -2,10 +2,9 @@ use serde::{Deserialize, Serialize};
 
 /// # See also
 /// - <https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)#login>
-#[allow(clippy::doc_markdown)]
 #[derive(Clone, Default, Deserialize, Serialize)]
 pub struct QBittorrentClientOptions {
-    /// QBittorrent WebUI API host including port but without protocol or password
+    /// qBittorrent `WebUI` API host including port but without protocol or password
     ///
     /// # Examples
     /// - `localhost`
@@ -14,10 +13,10 @@ pub struct QBittorrentClientOptions {
     /// - `127.0.0.1`
     pub host: String,
 
-    /// QBittorrent WebUI API username
+    /// qBittorrent `WebUI` API username
     pub username: String,
 
-    /// QBittorrent WebUI API password
+    /// qBittorrent `WebUI` API password
     pub password: String,
 
     /// User agent

@@ -22,7 +22,6 @@ impl QBittorrentClient {
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
-#[allow(clippy::doc_markdown)]
 pub struct FilterOptions {
     /// Filter torrent list by state.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -84,7 +83,10 @@ pub enum FilterState {
 
 /// Represents detailed information about a torrent.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[allow(clippy::struct_excessive_bools)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "mirrors the qBittorrent API response"
+)]
 pub struct Torrent {
     /// Time (Unix Epoch) when the torrent was added to the client.
     pub added_on: i64,
@@ -365,7 +367,11 @@ pub enum State {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::indexing_slicing, clippy::float_cmp)]
+#[expect(
+    clippy::indexing_slicing,
+    clippy::float_cmp,
+    reason = "indexing after length validation and comparing known fixture values"
+)]
 mod tests {
     use super::*;
     use crate::tests::init_logger;
@@ -404,7 +410,8 @@ mod tests {
 
     #[test]
     fn deserialize_torrents_from_fixture() {
-        let torrents: Vec<Torrent> = serde_json::from_str(FIXTURE).unwrap();
+        let torrents: Vec<Torrent> =
+            serde_json::from_str(FIXTURE).expect("fixture should deserialize");
         assert_eq!(torrents.len(), 2);
         assert_eq!(torrents[0].name, "Artist - Album [2023] [WEB FLAC]");
         assert_eq!(torrents[0].state, State::StalledUP);
@@ -415,7 +422,9 @@ mod tests {
 
     #[test]
     fn deserialize_torrent_numeric_fields() {
-        let torrents: Vec<Torrent> = serde_json::from_str(FIXTURE).unwrap();
+        let torrents: Vec<Torrent> =
+            serde_json::from_str(FIXTURE).expect("fixture should deserialize");
+        assert_eq!(torrents.len(), 2);
         let torrent = &torrents[0];
         assert_eq!(torrent.added_on, 1_700_000_000);
         assert_eq!(torrent.completed, 104_857_600);
@@ -433,7 +442,7 @@ mod tests {
             limit: Some(10),
             ..FilterOptions::default()
         };
-        let json = serde_json::to_value(&filters).unwrap();
+        let json = serde_json::to_value(&filters).expect("filters should serialize");
         assert_eq!(json["filter"], "seeding");
         assert_eq!(json["category"], "music");
         assert_eq!(json["limit"], 10);

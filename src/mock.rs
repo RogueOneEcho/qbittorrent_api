@@ -11,11 +11,10 @@ use rogue_logging::Failure;
 ///
 /// Set return values using the builder pattern, then use as `dyn QBittorrentClientTrait`.
 #[derive(Clone, Debug)]
-#[allow(clippy::struct_field_names)]
 pub struct MockQBittorrentClient {
-    login_returns: Option<Status>,
-    get_torrents_returns: Option<Response<Vec<Torrent>>>,
-    add_torrents_returns: Option<Response<bool>>,
+    login: Option<Status>,
+    get_torrents: Option<Response<Vec<Torrent>>>,
+    add_torrents: Option<Response<bool>>,
 }
 
 impl MockQBittorrentClient {
@@ -23,30 +22,30 @@ impl MockQBittorrentClient {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            login_returns: None,
-            get_torrents_returns: None,
-            add_torrents_returns: None,
+            login: None,
+            get_torrents: None,
+            add_torrents: None,
         }
     }
 
     /// Configure the return value for `login`
     #[must_use]
     pub fn with_login(mut self, status: Status) -> Self {
-        self.login_returns = Some(status);
+        self.login = Some(status);
         self
     }
 
     /// Configure the return value for `get_torrents`
     #[must_use]
     pub fn with_get_torrents(mut self, response: Response<Vec<Torrent>>) -> Self {
-        self.get_torrents_returns = Some(response);
+        self.get_torrents = Some(response);
         self
     }
 
     /// Configure the return value for `add_torrent` and `add_torrents`
     #[must_use]
     pub fn with_add_torrents(mut self, response: Response<bool>) -> Self {
-        self.add_torrents_returns = Some(response);
+        self.add_torrents = Some(response);
         self
     }
 }
@@ -54,12 +53,12 @@ impl MockQBittorrentClient {
 impl Default for MockQBittorrentClient {
     fn default() -> Self {
         Self {
-            login_returns: Some(Status::Success),
-            get_torrents_returns: Some(Response {
+            login: Some(Status::Success),
+            get_torrents: Some(Response {
                 status_code: Some(200),
                 result: Some(vec![Torrent::mock()]),
             }),
-            add_torrents_returns: Some(Response {
+            add_torrents: Some(Response {
                 status_code: Some(200),
                 result: Some(true),
             }),
@@ -71,18 +70,18 @@ impl Default for MockQBittorrentClient {
 impl QBittorrentClientTrait for MockQBittorrentClient {
     async fn login(&mut self) -> Result<Status, Failure<ClientAction>> {
         Ok(self
-            .login_returns
+            .login
             .clone()
-            .expect("MockQBittorrentClient: login_returns not set"))
+            .expect("MockQBittorrentClient: login not set"))
     }
     async fn get_torrents(
         &mut self,
         _filters: FilterOptions,
     ) -> Result<Response<Vec<Torrent>>, Failure<ClientAction>> {
         Ok(self
-            .get_torrents_returns
+            .get_torrents
             .clone()
-            .expect("MockQBittorrentClient: get_torrents_returns not set"))
+            .expect("MockQBittorrentClient: get_torrents not set"))
     }
     async fn add_torrent(
         &mut self,
@@ -97,14 +96,14 @@ impl QBittorrentClientTrait for MockQBittorrentClient {
         _torrents: Vec<PathBuf>,
     ) -> Result<Response<bool>, Failure<AddTorrentAction>> {
         Ok(self
-            .add_torrents_returns
+            .add_torrents
             .clone()
-            .expect("MockQBittorrentClient: add_torrents_returns not set"))
+            .expect("MockQBittorrentClient: add_torrents not set"))
     }
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::indexing_slicing)]
+#[expect(clippy::indexing_slicing, reason = "indexing after length validation")]
 mod tests {
     use super::*;
 
@@ -112,8 +111,8 @@ mod tests {
     async fn mock_login_returns_configured_value() {
         let mut mock = MockQBittorrentClient::new().with_login(Status::Success);
         let result = mock.login().await;
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), Status::Success);
+        let status = result.expect("login should succeed");
+        assert_eq!(status, Status::Success);
     }
 
     #[tokio::test]
@@ -121,10 +120,9 @@ mod tests {
         let mut mock = MockQBittorrentClient::default();
         let filters = FilterOptions::default();
         let result = mock.get_torrents(filters).await;
-        assert!(result.is_ok());
-        let response = result.unwrap();
+        let response = result.expect("get_torrents should succeed");
         assert_eq!(response.status_code, Some(200));
-        let torrents = response.result.unwrap();
+        let torrents = response.result.expect("result should be present");
         assert_eq!(torrents.len(), 1);
         assert_eq!(torrents[0].name, "Artist - Album [2023] [WEB FLAC]");
     }
