@@ -10,7 +10,7 @@ mod client;
 mod client_trait;
 mod factory;
 pub mod get_torrents;
-pub mod login;
+mod login;
 #[cfg(feature = "mock")]
 pub mod mock;
 mod options;

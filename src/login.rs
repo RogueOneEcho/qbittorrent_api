@@ -1,5 +1,6 @@
 use crate::client::{handle_status_response, ClientAction};
 use crate::{QBittorrentClient, Status};
+use reqwest::cookie::CookieStore;
 use reqwest::Method;
 use rogue_logging::Failure;
 
@@ -8,7 +9,7 @@ impl QBittorrentClient {
     ///
     /// # See Also
     /// - <https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)#login>
-    pub async fn login(&mut self) -> Result<Status, Failure<ClientAction>> {
+    pub(crate) async fn login(&self) -> Result<Status, Failure<ClientAction>> {
         let method = Method::POST;
         let endpoint = "/auth/login";
         let username = self.username.clone();
@@ -20,6 +21,25 @@ impl QBittorrentClient {
         let response = self.request(method.clone(), endpoint, &data).await?;
         handle_status_response(&method, endpoint, response).await
     }
+
+    /// Check if the cookie jar contains a session cookie for the host
+    pub(crate) fn has_session_cookie(&self) -> bool {
+        let url = reqwest::Url::parse(&self.host).expect("host should be a valid URL");
+        self.cookies.cookies(&url).is_some()
+    }
+
+    /// Login if no session cookie exists
+    pub(crate) async fn ensure_login(&self) -> Result<(), Failure<ClientAction>> {
+        if !self.has_session_cookie() {
+            let status = self.login().await?;
+            if status != Status::Success {
+                return Err(
+                    Failure::from_action(ClientAction::Login).with("status", format!("{status:?}"))
+                );
+            }
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -27,9 +47,6 @@ mod tests {
     use crate::tests::init_logger;
     use crate::QBittorrentClientOptions;
     use crate::{QBittorrentClient, Status};
-    use log::trace;
-    use reqwest::cookie::CookieStore;
-    use reqwest::Url;
     use rogue_config::{OptionsProvider, YamlOptionsProvider};
     use std::error::Error;
 
@@ -40,17 +57,14 @@ mod tests {
         init_logger();
         let options: QBittorrentClientOptions =
             YamlOptionsProvider::get().map_err(|e| e.to_string())?;
-        let mut client = QBittorrentClient::from_options(options);
+        let client = QBittorrentClient::from_options(options);
 
         // Act
         let status = client.login().await?;
 
         // Assert
         assert_eq!(status, Status::Success);
-        let url = Url::parse(&client.host.clone()).expect("url should parse");
-        let cookies = client.cookies.cookies(&url);
-        trace!("{cookies:?}");
-        assert!(cookies.is_some());
+        assert!(client.has_session_cookie());
         Ok(())
     }
 }

@@ -16,6 +16,7 @@ use serde::Serialize;
 use std::sync::Arc;
 use std::time::SystemTime;
 use thiserror::Error;
+use tokio::sync::Mutex;
 use tower::limit::RateLimit;
 use tower::{Service, ServiceExt};
 
@@ -23,11 +24,11 @@ use tower::{Service, ServiceExt};
 ///
 /// Created by a [`QBittorrentClientFactory`]
 pub struct QBittorrentClient {
-    pub host: String,
-    pub username: String,
-    pub password: String,
-    pub cookies: Arc<Jar>,
-    pub client: RateLimit<Client>,
+    pub(crate) host: String,
+    pub(crate) username: String,
+    pub(crate) password: String,
+    pub(crate) cookies: Arc<Jar>,
+    pub(crate) client: Mutex<RateLimit<Client>>,
 }
 
 impl QBittorrentClient {
@@ -38,14 +39,15 @@ impl QBittorrentClient {
     }
 
     pub(crate) async fn request<T: Serialize>(
-        &mut self,
+        &self,
         method: Method,
         endpoint: &str,
         data: T,
     ) -> Result<reqwest::Response, Failure<ClientAction>> {
         trace!("{} request {method} {endpoint}", "Sending".bold());
         let url = format!("{}/api/v2{endpoint}", self.host);
-        let request_builder = self.client.get_ref().request(method.clone(), url.clone());
+        let mut client = self.client.lock().await;
+        let request_builder = client.get_ref().request(method.clone(), url.clone());
         let request = match method {
             Method::GET => Ok(request_builder.query(&data)),
             Method::POST => Ok(request_builder.form(&data)),
@@ -59,8 +61,7 @@ impl QBittorrentClient {
             .build()
             .map_err(Failure::wrap(ClientAction::BuildRequest))?;
         let start = SystemTime::now();
-        let result = self
-            .client
+        let result = client
             .ready()
             .await
             .expect("rate limiter should be available")
@@ -72,6 +73,35 @@ impl QBittorrentClient {
             .as_secs_f64();
         trace!("{} response after {elapsed:.3}", "Received".bold());
         result.map_err(Failure::wrap(ClientAction::SendRequest))
+    }
+
+    /// Make a request with automatic login
+    ///
+    /// - Logs in if no session cookie exists
+    /// - On 403, logs the response and retries after a fresh login
+    /// - On second failure, returns the error
+    pub(crate) async fn request_with_login<T: Serialize>(
+        &self,
+        method: Method,
+        endpoint: &str,
+        data: &T,
+    ) -> Result<reqwest::Response, Failure<ClientAction>> {
+        self.ensure_login().await?;
+        let response = self.request(method.clone(), endpoint, data).await?;
+        if response.status().as_u16() == 403 {
+            debug!(
+                "{} 403 response for {method} {endpoint}, re-authenticating",
+                "Received".bold()
+            );
+            let status = self.login().await?;
+            if status != Status::Success {
+                return Err(
+                    Failure::from_action(ClientAction::Login).with("status", format!("{status:?}"))
+                );
+            }
+            return self.request(method, endpoint, data).await;
+        }
+        Ok(response)
     }
 }
 
@@ -119,24 +149,21 @@ pub(crate) async fn deserialize_response<T: DeserializeOwned>(
 
 #[async_trait]
 impl QBittorrentClientTrait for QBittorrentClient {
-    async fn login(&mut self) -> Result<Status, Failure<ClientAction>> {
-        QBittorrentClient::login(self).await
-    }
     async fn get_torrents(
-        &mut self,
+        &self,
         filters: FilterOptions,
     ) -> Result<Response<Vec<Torrent>>, Failure<ClientAction>> {
         QBittorrentClient::get_torrents(self, filters).await
     }
     async fn add_torrent(
-        &mut self,
+        &self,
         options: AddTorrentOptions,
         torrent: PathBuf,
     ) -> Result<Response<bool>, Failure<AddTorrentAction>> {
         QBittorrentClient::add_torrent(self, options, torrent).await
     }
     async fn add_torrents(
-        &mut self,
+        &self,
         options: AddTorrentOptions,
         torrents: Vec<PathBuf>,
     ) -> Result<Response<bool>, Failure<AddTorrentAction>> {
@@ -157,4 +184,6 @@ pub enum ClientAction {
     DeserializeResponse,
     #[error("validate response")]
     ValidateResponse,
+    #[error("login")]
+    Login,
 }

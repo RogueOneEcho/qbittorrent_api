@@ -11,12 +11,14 @@ impl QBittorrentClient {
     /// # See Also
     /// - <https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)#get-torrent-list>
     pub async fn get_torrents(
-        &mut self,
+        &self,
         filters: FilterOptions,
     ) -> Result<Response<Vec<Torrent>>, Failure<ClientAction>> {
         let method = Method::GET;
         let endpoint = "/torrents/info";
-        let response = self.request(method.clone(), endpoint, &filters).await?;
+        let response = self
+            .request_with_login(method.clone(), endpoint, &filters)
+            .await?;
         deserialize_response::<Vec<Torrent>>(&method, endpoint, response).await
     }
 }
@@ -389,7 +391,7 @@ mod tests {
         init_logger();
         let options: QBittorrentClientOptions =
             YamlOptionsProvider::get().map_err(|e| e.to_string())?;
-        let mut client = QBittorrentClient::from_options(options);
+        let client = QBittorrentClient::from_options(options);
         let filters = FilterOptions {
             limit: Some(20),
             category: Some("example".to_owned()),
@@ -397,8 +399,6 @@ mod tests {
         };
 
         // Act
-        let response = client.login().await?;
-        trace!("{response:?}");
         let response = client.get_torrents(filters).await?;
         trace!("{}", response.to_json_pretty());
 

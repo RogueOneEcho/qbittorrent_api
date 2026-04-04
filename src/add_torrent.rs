@@ -1,6 +1,6 @@
-use crate::{QBittorrentClient, Response};
+use crate::{QBittorrentClient, Response, Status};
 use colored::Colorize;
-use log::trace;
+use log::{debug, trace};
 use reqwest::multipart::{Form, Part};
 use reqwest::Method;
 use rogue_logging::Failure;
@@ -18,7 +18,7 @@ impl QBittorrentClient {
     /// # See Also
     /// - <https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)#add-new-torrent>
     pub async fn add_torrent(
-        &mut self,
+        &self,
         options: AddTorrentOptions,
         torrent: PathBuf,
     ) -> Result<Response<bool>, Failure<AddTorrentAction>> {
@@ -30,23 +30,62 @@ impl QBittorrentClient {
     /// # See Also
     /// - <https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)#add-new-torrent>
     pub async fn add_torrents(
-        &mut self,
+        &self,
         options: AddTorrentOptions,
         torrents: Vec<PathBuf>,
     ) -> Result<Response<bool>, Failure<AddTorrentAction>> {
+        self.ensure_login()
+            .await
+            .map_err(Failure::wrap(AddTorrentAction::Login))?;
+        let options_retry = options.clone();
+        let torrents_retry = torrents.clone();
+        let response = self.send_add_torrents(options, torrents).await?;
+        if response.status().as_u16() == 403 {
+            debug!(
+                "{} 403 response for add_torrents, re-authenticating",
+                "Received".bold()
+            );
+            let status = self
+                .login()
+                .await
+                .map_err(Failure::wrap(AddTorrentAction::Login))?;
+            if status != Status::Success {
+                return Err(Failure::from_action(AddTorrentAction::Login)
+                    .with("status", format!("{status:?}")));
+            }
+            let response = self
+                .send_add_torrents(options_retry, torrents_retry)
+                .await?;
+            let status = response.status();
+            return Ok(Response {
+                status_code: Some(status.as_u16()),
+                result: Some(status.is_success()),
+            });
+        }
+        let status = response.status();
+        Ok(Response {
+            status_code: Some(status.as_u16()),
+            result: Some(status.is_success()),
+        })
+    }
+
+    async fn send_add_torrents(
+        &self,
+        options: AddTorrentOptions,
+        torrents: Vec<PathBuf>,
+    ) -> Result<reqwest::Response, Failure<AddTorrentAction>> {
         let method = Method::POST;
         let endpoint = "/torrents/add";
         let url = format!("{}/api/v2{endpoint}", self.host);
-        let request = self
-            .client
+        let mut client = self.client.lock().await;
+        let request = client
             .get_ref()
             .request(method.clone(), url.clone())
             .multipart(options.to_form(torrents)?)
             .build()
             .map_err(Failure::wrap(AddTorrentAction::BuildRequest))?;
         let start = SystemTime::now();
-        let result = self
-            .client
+        let result = client
             .ready()
             .await
             .expect("rate limiter should be available")
@@ -57,16 +96,11 @@ impl QBittorrentClient {
             .expect("elapsed should not fail")
             .as_secs_f64();
         trace!("{} response after {elapsed:.3}", "Received".bold());
-        let response = result.map_err(Failure::wrap(AddTorrentAction::SendRequest))?;
-        let status = response.status();
-        Ok(Response {
-            status_code: Some(status.as_u16()),
-            result: Some(status.is_success()),
-        })
+        result.map_err(Failure::wrap(AddTorrentAction::SendRequest))
     }
 }
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct AddTorrentOptions {
     /// Path to the downloads folder the torrent content is stored in
     pub save_path: Option<String>,
@@ -178,6 +212,8 @@ pub enum AddTorrentAction {
     BuildRequest,
     #[error("send request")]
     SendRequest,
+    #[error("login")]
+    Login,
 }
 
 #[cfg(test)]
@@ -197,7 +233,7 @@ mod tests {
         init_logger();
         let options: QBittorrentClientOptions =
             YamlOptionsProvider::get().map_err(|e| e.to_string())?;
-        let mut client = QBittorrentClient::from_options(options);
+        let client = QBittorrentClient::from_options(options);
         let torrents = vec![
             PathBuf::from("/srv/shared/tests/example-1.torrent"),
             PathBuf::from("/srv/shared/tests/example-2.torrent"),
@@ -211,8 +247,6 @@ mod tests {
         };
 
         // Act
-        let response = client.login().await?;
-        trace!("{response:?}");
         let response = client.add_torrents(options, torrents).await?;
         trace!("{}", response.to_json_pretty());
 

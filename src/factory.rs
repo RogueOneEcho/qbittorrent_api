@@ -6,6 +6,7 @@ use crate::QBittorrentClientOptions;
 use reqwest::cookie::Jar;
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::{header, ClientBuilder};
+use tokio::sync::Mutex;
 
 /// The number of requests allowed per duration
 const DEFAULT_RATE_COUNT: usize = 10;
@@ -43,7 +44,7 @@ impl QBittorrentClientFactory {
             cookies,
             username: self.options.username.clone(),
             password: self.options.password.clone(),
-            client,
+            client: Mutex::new(client),
         }
     }
 
