@@ -1,3 +1,5 @@
+//! Trait abstraction for qBittorrent API operations.
+
 use async_trait::async_trait;
 use std::path::PathBuf;
 

@@ -1,3 +1,5 @@
+//! Session authentication and cookie management.
+
 use crate::client::{handle_status_response, ClientAction};
 use crate::{QBittorrentClient, Status};
 use reqwest::cookie::CookieStore;

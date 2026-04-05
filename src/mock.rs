@@ -1,3 +1,5 @@
+//! Mock implementation of [`QBittorrentClientTrait`] for testing.
+
 use async_trait::async_trait;
 use std::path::PathBuf;
 

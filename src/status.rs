@@ -1,10 +1,16 @@
+//! Login response status parsing.
+
 use crate::status::Status::{Failure, Other, Success};
 use serde::{Deserialize, Serialize};
 
+/// Parsed status from a qBittorrent API text response.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Status {
+    /// API returned `"Ok."`
     Success,
+    /// API returned `"Fails."`
     Failure,
+    /// API returned an unrecognized response.
     Other(String),
 }
 

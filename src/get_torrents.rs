@@ -1,3 +1,5 @@
+//! Torrent listing, filtering, and response models.
+
 use crate::client::{deserialize_response, ClientAction};
 use crate::QBittorrentClient;
 use crate::Response;
@@ -23,6 +25,10 @@ impl QBittorrentClient {
     }
 }
 
+/// Query parameters for filtering the torrent list.
+///
+/// # See Also
+/// - <https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)#get-torrent-list>
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct FilterOptions {
     /// Filter torrent list by state.
@@ -178,7 +184,9 @@ pub struct Torrent {
     /// Torrent share ratio. Max ratio value: `9999`.
     pub ratio: f64,
 
-    /// TODO: Difference from `max_ratio`?
+    /// Per-torrent share ratio limit set by the user.
+    ///
+    /// `-1` uses the global limit, `-2` means no limit.
     pub ratio_limit: f64,
 
     /// Path where this torrent's data is stored.
@@ -187,7 +195,9 @@ pub struct Torrent {
     /// Torrent elapsed time while complete (seconds).
     pub seeding_time: i64,
 
-    /// TODO: Difference from `max_seeding_time`?
+    /// Per-torrent seeding time limit in seconds set by the user.
+    ///
+    /// `-1` uses the global limit, `-2` means no limit.
     pub seeding_time_limit: i64,
 
     /// Time (Unix Epoch) when this torrent was last seen complete.

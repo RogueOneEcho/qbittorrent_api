@@ -1,3 +1,5 @@
+//! Torrent upload via multipart form requests.
+
 use crate::{QBittorrentClient, Response, Status};
 use colored::Colorize;
 use log::{debug, trace};
@@ -100,6 +102,10 @@ impl QBittorrentClient {
     }
 }
 
+/// Options for adding torrents to qBittorrent.
+///
+/// # See Also
+/// - <https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)#add-new-torrent>
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct AddTorrentOptions {
     /// Path to the downloads folder the torrent content is stored in
@@ -133,6 +139,7 @@ pub struct AddTorrentOptions {
 }
 
 impl AddTorrentOptions {
+    /// Build a multipart form from these options and torrent files.
     pub fn to_form(self, torrents: Vec<PathBuf>) -> Result<Form, Failure<AddTorrentAction>> {
         let mut form = Form::new();
         for torrent in torrents {

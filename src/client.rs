@@ -1,3 +1,5 @@
+//! Core HTTP client with rate-limited request handling and automatic login.
+
 use async_trait::async_trait;
 use std::path::PathBuf;
 
@@ -24,20 +26,27 @@ use tower::{Service, ServiceExt};
 ///
 /// Created by a [`QBittorrentClientFactory`]
 pub struct QBittorrentClient {
+    /// API host URL.
     pub(crate) host: String,
+    /// `WebUI` username.
     pub(crate) username: String,
+    /// `WebUI` password.
     pub(crate) password: String,
+    /// Cookie jar for session persistence.
     pub(crate) cookies: Arc<Jar>,
+    /// Rate-limited HTTP client.
     pub(crate) client: Mutex<RateLimit<Client>>,
 }
 
 impl QBittorrentClient {
+    /// Create a client from options using default factory settings.
     #[cfg(test)]
     pub(crate) fn from_options(options: QBittorrentClientOptions) -> QBittorrentClient {
         let factory = QBittorrentClientFactory { options };
         factory.create()
     }
 
+    /// Send a rate-limited request to the qBittorrent API.
     pub(crate) async fn request<T: Serialize>(
         &self,
         method: Method,
@@ -105,6 +114,7 @@ impl QBittorrentClient {
     }
 }
 
+/// Read the response body and parse it as a [`Status`].
 pub(crate) async fn handle_status_response(
     method: &Method,
     endpoint: &str,
@@ -120,6 +130,7 @@ pub(crate) async fn handle_status_response(
     Ok(Status::from(text.as_str()))
 }
 
+/// Read the response body and deserialize it as JSON into a [`Response<T>`].
 pub(crate) async fn deserialize_response<T: DeserializeOwned>(
     method: &Method,
     endpoint: &str,

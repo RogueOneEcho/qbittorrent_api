@@ -1,3 +1,5 @@
+//! Factory for constructing a rate-limited [`QBittorrentClient`].
+
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -8,16 +10,19 @@ use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::{header, ClientBuilder};
 use tokio::sync::Mutex;
 
-/// The number of requests allowed per duration
+/// Default number of requests allowed per duration.
 const DEFAULT_RATE_COUNT: usize = 10;
+/// Default duration in seconds before rate limit is reset.
 const DEFAULT_RATE_DURATION: usize = 10;
 
 /// Create a [`QBittorrentClient`]
 pub struct QBittorrentClientFactory {
+    /// Configuration for the client to create.
     pub options: QBittorrentClientOptions,
 }
 
 impl QBittorrentClientFactory {
+    /// Create a new [`QBittorrentClient`] with rate limiting applied.
     #[must_use]
     #[expect(
         clippy::as_conversions,

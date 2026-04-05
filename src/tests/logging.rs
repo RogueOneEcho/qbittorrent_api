@@ -1,3 +1,5 @@
+//! Logger initialization for integration tests.
+
 use rogue_logging::Verbosity::Trace;
 use rogue_logging::{InitLog, LoggerBuilder};
 

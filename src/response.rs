@@ -1,16 +1,21 @@
+//! Generic API response wrapper with status code validation.
+
 use crate::client::ClientAction;
 use reqwest::StatusCode;
 use rogue_logging::Failure;
 use serde::{Deserialize, Serialize};
 
+/// API response containing a status code and deserialized result.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Response<T> {
+    /// HTTP status code returned by the API.
     pub status_code: Option<u16>,
+    /// Deserialized response body.
     pub result: Option<T>,
 }
 
 impl<T: Serialize> Response<T> {
-    /// Get the result
+    /// Validate the status code and extract the result.
     ///
     /// Returns an error if:
     /// - Status code is not set
@@ -51,6 +56,7 @@ impl<T: Serialize> Response<T> {
         }
     }
 
+    /// Serialize the response as pretty-printed JSON.
     #[cfg(test)]
     pub fn to_json_pretty(&self) -> String {
         serde_json::to_string_pretty(self).unwrap_or_else(|e| e.to_string())

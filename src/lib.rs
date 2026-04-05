@@ -1,3 +1,8 @@
+//! API client for qBittorrent v4.1+.
+//!
+//! Provides async access to the qBittorrent `WebUI` API with automatic rate
+//! limiting, session management, and retry-on-403 authentication.
+
 pub use client::*;
 pub use client_trait::*;
 pub use factory::*;
