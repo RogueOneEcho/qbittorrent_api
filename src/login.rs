@@ -1,9 +1,9 @@
 //! Session authentication and cookie management.
 
-use crate::client::{handle_status_response, ClientAction};
+use crate::client::{ClientAction, handle_status_response};
 use crate::{QBittorrentClient, Status};
-use reqwest::cookie::CookieStore;
 use reqwest::Method;
+use reqwest::cookie::CookieStore;
 use rogue_logging::Failure;
 
 impl QBittorrentClient {
@@ -47,8 +47,8 @@ impl QBittorrentClient {
 
 #[cfg(test)]
 mod tests {
-    use crate::tests::init_logger;
     use crate::QBittorrentClientOptions;
+    use crate::tests::init_logger;
     use crate::{QBittorrentClient, Status};
     use rogue_config::{OptionsProvider, YamlOptionsProvider};
     use std::error::Error;

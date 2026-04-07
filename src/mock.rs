@@ -109,10 +109,11 @@ mod tests {
     async fn mock_default_has_all_ok_responses() {
         let mock = MockQBittorrentClient::default();
         assert!(mock.get_torrents(FilterOptions::default()).await.is_ok());
-        assert!(mock
-            .add_torrents(AddTorrentOptions::default(), vec![])
-            .await
-            .is_ok());
+        assert!(
+            mock.add_torrents(AddTorrentOptions::default(), vec![])
+                .await
+                .is_ok()
+        );
     }
 
     #[tokio::test]

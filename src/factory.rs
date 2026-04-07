@@ -7,7 +7,7 @@ use crate::QBittorrentClient;
 use crate::QBittorrentClientOptions;
 use reqwest::cookie::Jar;
 use reqwest::header::{HeaderMap, HeaderValue};
-use reqwest::{header, ClientBuilder};
+use reqwest::{ClientBuilder, header};
 use tokio::sync::Mutex;
 
 /// Default number of requests allowed per duration.

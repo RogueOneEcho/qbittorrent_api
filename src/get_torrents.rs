@@ -1,8 +1,8 @@
 //! Torrent listing, filtering, and response models.
 
-use crate::client::{deserialize_response, ClientAction};
 use crate::QBittorrentClient;
 use crate::Response;
+use crate::client::{ClientAction, deserialize_response};
 use reqwest::Method;
 use rogue_logging::Failure;
 use serde::{Deserialize, Serialize};
@@ -522,8 +522,8 @@ pub enum State {
 )]
 mod tests {
     use super::*;
-    use crate::tests::init_logger;
     use crate::QBittorrentClientOptions;
+    use crate::tests::init_logger;
     use insta::assert_yaml_snapshot;
     use log::trace;
     use rogue_config::{OptionsProvider, YamlOptionsProvider};

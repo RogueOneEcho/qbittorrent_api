@@ -13,8 +13,8 @@ use log::*;
 use reqwest::cookie::Jar;
 use reqwest::{Client, Method};
 use rogue_logging::Failure;
-use serde::de::DeserializeOwned;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 use std::sync::Arc;
 use std::time::SystemTime;
 use thiserror::Error;
@@ -63,7 +63,7 @@ impl QBittorrentClient {
             _ => {
                 return Err(Failure::from_action(ClientAction::BuildRequest)
                     .with("method", method.to_string())
-                    .with("endpoint", endpoint))
+                    .with("endpoint", endpoint));
             }
         }?;
         let request = request

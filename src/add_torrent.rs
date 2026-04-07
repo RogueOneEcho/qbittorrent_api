@@ -3,8 +3,8 @@
 use crate::{QBittorrentClient, Response, Status};
 use colored::Colorize;
 use log::{debug, trace};
-use reqwest::multipart::{Form, Part};
 use reqwest::Method;
+use reqwest::multipart::{Form, Part};
 use rogue_logging::Failure;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
@@ -230,8 +230,8 @@ pub enum AddTorrentAction {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tests::init_logger;
     use crate::QBittorrentClientOptions;
+    use crate::tests::init_logger;
     use log::trace;
     use rogue_config::OptionsProvider;
     use rogue_config::YamlOptionsProvider;

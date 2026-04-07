@@ -3,10 +3,10 @@
 use async_trait::async_trait;
 use std::path::PathBuf;
 
+use crate::Response;
 use crate::add_torrent::{AddTorrentAction, AddTorrentOptions};
 use crate::client::ClientAction;
 use crate::get_torrents::{FilterOptions, Torrent};
-use crate::Response;
 use rogue_logging::Failure;
 
 /// Trait for qBittorrent API operations
