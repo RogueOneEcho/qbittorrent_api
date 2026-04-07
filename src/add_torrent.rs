@@ -19,6 +19,7 @@ impl QBittorrentClient {
     ///
     /// # See Also
     /// - <https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)#add-new-torrent>
+    /// - <https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#add-new-torrent>
     pub async fn add_torrent(
         &self,
         options: AddTorrentOptions,
@@ -31,6 +32,7 @@ impl QBittorrentClient {
     ///
     /// # See Also
     /// - <https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)#add-new-torrent>
+    /// - <https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#add-new-torrent>
     pub async fn add_torrents(
         &self,
         options: AddTorrentOptions,
@@ -106,6 +108,8 @@ impl QBittorrentClient {
 ///
 /// # See Also
 /// - <https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)#add-new-torrent>
+/// - <https://github.com/qbittorrent/qBittorrent/blob/release-4.1.0/src/webui/api/torrentscontroller.cpp#L453>
+/// - <https://github.com/qbittorrent/qBittorrent/blob/release-5.0.0/src/webui/api/torrentscontroller.cpp#L693>
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct AddTorrentOptions {
     /// Path to the downloads folder the torrent content is stored in

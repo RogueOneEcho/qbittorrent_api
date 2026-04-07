@@ -1,0 +1,118 @@
+---
+source: src/get_torrents.rs
+expression: torrents
+---
+- added_on: 1700000000
+  amount_left: 0
+  auto_tmm: false
+  category: music
+  completed: 104857600
+  completion_on: 1700000120
+  dl_limit: 0
+  dlspeed: 0
+  downloaded: 104857600
+  downloaded_session: 0
+  eta: 8640000
+  f_l_piece_prio: false
+  force_start: false
+  hash: a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2
+  last_activity: 1700100000
+  magnet_uri: "magnet:?xt=urn:btih:a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2&dn=Artist+-+Album"
+  max_ratio: -1
+  max_seeding_time: -1
+  name: "Artist - Album [2023] [WEB FLAC]"
+  num_complete: 12
+  num_incomplete: 2
+  num_leechs: 1
+  num_seeds: 0
+  priority: 0
+  progress: 1
+  ratio: 2.5
+  ratio_limit: -2
+  save_path: /downloads
+  seeding_time_limit: -2
+  seen_complete: 1700050000
+  seq_dl: false
+  size: 104857600
+  state: stalledUP
+  super_seeding: false
+  tags: ""
+  time_active: 86520
+  total_size: 104857600
+  tracker: "https://tracker.example.com/announce"
+  up_limit: 0
+  uploaded: 262144000
+  uploaded_session: 0
+  upspeed: 0
+  availability: -1
+  content_path: "/downloads/Artist - Album [2023] [WEB FLAC]"
+  download_path: ""
+  max_inactive_seeding_time: -1
+  inactive_seeding_time_limit: -2
+  infohash_v1: a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2
+  infohash_v2: ""
+  seeding_time: 86400
+  trackers_count: 1
+  comment: Uploaded with example tool
+  has_metadata: true
+  popularity: 0.25
+  private: true
+  reannounce: 1800
+  root_path: "/downloads/Artist - Album [2023] [WEB FLAC]"
+- added_on: 1700200000
+  amount_left: 52428800
+  auto_tmm: true
+  category: ""
+  completed: 52428800
+  completion_on: -1
+  dl_limit: 0
+  dlspeed: 1048576
+  downloaded: 52428800
+  downloaded_session: 52428800
+  eta: 50
+  f_l_piece_prio: true
+  force_start: false
+  hash: b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3
+  last_activity: 1700200100
+  magnet_uri: "magnet:?xt=urn:btih:b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3&dn=Band+-+Live+Sessions"
+  max_ratio: -1
+  max_seeding_time: -1
+  name: "Band - Live Sessions [2024] [WEB FLAC]"
+  num_complete: 5
+  num_incomplete: 3
+  num_leechs: 0
+  num_seeds: 2
+  priority: 1
+  progress: 0.5
+  ratio: 0
+  ratio_limit: -2
+  save_path: /downloads
+  seeding_time_limit: -2
+  seen_complete: -1
+  seq_dl: false
+  size: 104857600
+  state: downloading
+  super_seeding: false
+  tags: "new,priority"
+  time_active: 100
+  total_size: 104857600
+  tracker: "https://tracker.example.com/announce"
+  up_limit: 0
+  uploaded: 0
+  uploaded_session: 0
+  upspeed: 0
+  availability: 0.85
+  content_path: "/downloads/Band - Live Sessions [2024] [WEB FLAC]"
+  download_path: ""
+  max_inactive_seeding_time: -1
+  inactive_seeding_time_limit: -2
+  infohash_v1: b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3
+  infohash_v2: ""
+  seeding_time: 0
+  trackers_count: 1
+  comment: ""
+  has_metadata: true
+  popularity: 0.1
+  private: true
+  reannounce: 900
+  root_path: "/downloads/Band - Live Sessions [2024] [WEB FLAC]"

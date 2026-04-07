@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// # See also
 /// - <https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)#login>
+/// - <https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#login>
 #[derive(Clone, Default, Deserialize, Serialize)]
 pub struct QBittorrentClientOptions {
     /// qBittorrent `WebUI` API host including port but without protocol or password.

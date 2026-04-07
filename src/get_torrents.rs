@@ -12,6 +12,9 @@ impl QBittorrentClient {
     ///
     /// # See Also
     /// - <https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)#get-torrent-list>
+    /// - <https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#get-torrent-list>
+    /// - <https://github.com/qbittorrent/qBittorrent/blob/release-4.1.0/src/webui/api/torrentscontroller.cpp#L157>
+    /// - <https://github.com/qbittorrent/qBittorrent/blob/release-5.0.0/src/webui/api/torrentscontroller.cpp#L293>
     pub async fn get_torrents(
         &self,
         filters: FilterOptions,
@@ -29,6 +32,9 @@ impl QBittorrentClient {
 ///
 /// # See Also
 /// - <https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)#get-torrent-list>
+/// - <https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#get-torrent-list>
+/// - <https://github.com/qbittorrent/qBittorrent/blob/release-4.1.0/src/webui/api/torrentscontroller.cpp#L157>
+/// - <https://github.com/qbittorrent/qBittorrent/blob/release-5.0.0/src/webui/api/torrentscontroller.cpp#L293>
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct FilterOptions {
     /// Filter torrent list by state.
@@ -72,6 +78,10 @@ pub struct FilterOptions {
 }
 
 /// Represents the allowed torrent states for filtering.
+///
+/// # See Also
+/// - <https://github.com/qbittorrent/qBittorrent/blob/release-4.1.0/src/webui/api/torrentscontroller.cpp#L151>
+/// - <https://github.com/qbittorrent/qBittorrent/blob/release-5.0.0/src/base/torrentfilter.cpp#L89>
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FilterState {
@@ -79,17 +89,37 @@ pub enum FilterState {
     Downloading,
     Seeding,
     Completed,
-    Paused,
     Active,
     Inactive,
+    /// v4.1 only, replaced by [`Stopped`] in v5.0
+    Paused,
+    /// v4.1 only, replaced by [`Running`] in v5.0
     Resumed,
+    /// Added in v4.6
     Stalled,
+    /// Added in v4.6
     StalledUploading,
+    /// Added in v4.6
     StalledDownloading,
+    /// Added in v4.6
+    Checking,
+    /// Added in v4.6
+    Moving,
+    /// Added in v4.6
     Errored,
+    /// Replaces [`Paused`] in v5.0
+    Stopped,
+    /// Replaces [`Resumed`] in v5.0
+    Running,
 }
 
 /// Represents detailed information about a torrent.
+///
+/// # See Also
+/// - <https://github.com/qbittorrent/qBittorrent/blob/release-4.1.0/src/webui/api/serialize/serialize_torrent.cpp#L86>
+/// - <https://github.com/qbittorrent/qBittorrent/blob/release-4.1.0/src/webui/api/serialize/serialize_torrent.h#L39>
+/// - <https://github.com/qbittorrent/qBittorrent/blob/release-5.0.0/src/webui/api/serialize/serialize_torrent.cpp#L110>
+/// - <https://github.com/qbittorrent/qBittorrent/blob/release-5.0.0/src/webui/api/serialize/serialize_torrent.h#L42>
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[expect(
     clippy::struct_excessive_bools,
@@ -105,9 +135,6 @@ pub struct Torrent {
     /// Whether this torrent is managed by Automatic Torrent Management.
     pub auto_tmm: bool,
 
-    /// Percentage of file pieces currently available.
-    pub availability: f64,
-
     /// Category of the torrent.
     pub category: String,
 
@@ -116,10 +143,6 @@ pub struct Torrent {
 
     /// Time (Unix Epoch) when the torrent completed.
     pub completion_on: i64,
-
-    /// Absolute path of torrent content.
-    /// Root path for multifile torrents, absolute file path for singlefile torrents.
-    pub content_path: String,
 
     /// Torrent download speed limit (bytes/s). `-1` if unlimited.
     pub dl_limit: i64,
@@ -144,9 +167,6 @@ pub struct Torrent {
 
     /// Torrent hash.
     pub hash: String,
-
-    /// True if torrent is from a private tracker (added in 5.0.0).
-    pub is_private: Option<bool>,
 
     /// Last time (Unix Epoch) when a chunk was downloaded/uploaded.
     pub last_activity: i64,
@@ -192,9 +212,6 @@ pub struct Torrent {
     /// Path where this torrent's data is stored.
     pub save_path: String,
 
-    /// Torrent elapsed time while complete (seconds).
-    pub seeding_time: i64,
-
     /// Per-torrent seeding time limit in seconds set by the user.
     ///
     /// `-1` uses the global limit, `-2` means no limit.
@@ -238,6 +255,99 @@ pub struct Torrent {
 
     /// Torrent upload speed (bytes/s).
     pub upspeed: u64,
+
+    /// Percentage of file pieces currently available.
+    ///
+    /// Added in v4.5
+    #[serde(default)]
+    pub availability: Option<f64>,
+
+    /// Absolute path of torrent content.
+    /// Root path for multifile torrents, absolute file path for singlefile torrents.
+    ///
+    /// Added in v4.5
+    #[serde(default)]
+    pub content_path: Option<String>,
+
+    /// Download path for the torrent.
+    ///
+    /// Added in v4.5
+    #[serde(default)]
+    pub download_path: Option<String>,
+
+    /// Maximum inactive seeding time (seconds) until torrent is stopped.
+    ///
+    /// Added in v4.6
+    #[serde(default)]
+    pub max_inactive_seeding_time: Option<i64>,
+
+    /// Per-torrent inactive seeding time limit in seconds.
+    ///
+    /// `-1` uses the global limit, `-2` means no limit.
+    ///
+    /// Added in v4.6
+    #[serde(default)]
+    pub inactive_seeding_time_limit: Option<i64>,
+
+    /// V1 info hash of the torrent.
+    ///
+    /// Added in v4.4
+    #[serde(default)]
+    pub infohash_v1: Option<String>,
+
+    /// V2 info hash of the torrent.
+    ///
+    /// Added in v4.4
+    #[serde(default)]
+    pub infohash_v2: Option<String>,
+
+    /// Torrent elapsed time while complete (seconds).
+    ///
+    /// Added in v4.5
+    #[serde(default)]
+    pub seeding_time: Option<i64>,
+
+    /// Number of trackers for this torrent.
+    ///
+    /// Added in v4.5
+    #[serde(default)]
+    pub trackers_count: Option<u64>,
+
+    /// Torrent comment.
+    ///
+    /// Added in v5.0
+    #[serde(default)]
+    pub comment: Option<String>,
+
+    /// True if torrent has metadata available.
+    ///
+    /// Added in v5.0
+    #[serde(default)]
+    pub has_metadata: Option<bool>,
+
+    /// Torrent popularity score.
+    ///
+    /// Added in v5.0
+    #[serde(default)]
+    pub popularity: Option<f64>,
+
+    /// True if torrent is from a private tracker.
+    ///
+    /// Added in v5.0
+    #[serde(default)]
+    pub private: Option<bool>,
+
+    /// Time until the next tracker reannounce (seconds).
+    ///
+    /// Added in v5.0
+    #[serde(default)]
+    pub reannounce: Option<i64>,
+
+    /// Root path of the torrent.
+    ///
+    /// Added in v5.0
+    #[serde(default)]
+    pub root_path: Option<String>,
 }
 
 #[cfg(feature = "mock")]
@@ -249,11 +359,9 @@ impl Torrent {
             added_on: 1_700_000_000,
             amount_left: 0,
             auto_tmm: false,
-            availability: -1.0,
             category: "music".to_owned(),
             completed: 104_857_600,
             completion_on: 1_700_000_120,
-            content_path: "/downloads/Artist - Album [2023] [WEB FLAC]".to_owned(),
             dl_limit: 0,
             dlspeed: 0,
             downloaded: 104_857_600,
@@ -262,7 +370,6 @@ impl Torrent {
             f_l_piece_prio: false,
             force_start: false,
             hash: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2".to_owned(),
-            is_private: None,
             last_activity: 1_700_100_000,
             magnet_uri:
                 "magnet:?xt=urn:btih:a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2&dn=Artist+-+Album"
@@ -279,7 +386,6 @@ impl Torrent {
             ratio: 2.5,
             ratio_limit: -2.0,
             save_path: "/downloads".to_owned(),
-            seeding_time: 86_400,
             seeding_time_limit: -2,
             seen_complete: 1_700_050_000,
             seq_dl: false,
@@ -294,11 +400,30 @@ impl Torrent {
             uploaded: 262_144_000,
             uploaded_session: 0,
             upspeed: 0,
+            availability: Some(-1.0),
+            content_path: Some("/downloads/Artist - Album [2023] [WEB FLAC]".to_owned()),
+            download_path: None,
+            max_inactive_seeding_time: None,
+            inactive_seeding_time_limit: None,
+            infohash_v1: None,
+            infohash_v2: None,
+            seeding_time: Some(86_400),
+            trackers_count: None,
+            comment: None,
+            has_metadata: None,
+            popularity: None,
+            private: None,
+            reannounce: None,
+            root_path: None,
         }
     }
 }
 
 /// Represents the various states a torrent can be in.
+///
+/// # See Also
+/// - <https://github.com/qbittorrent/qBittorrent/blob/release-4.1.0/src/webui/api/serialize/serialize_torrent.cpp#L38>
+/// - <https://github.com/qbittorrent/qBittorrent/blob/release-5.0.0/src/webui/api/serialize/serialize_torrent.cpp#L44>
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum State {
@@ -336,6 +461,8 @@ pub enum State {
     ForcedUP,
 
     /// Torrent is allocating disk space for download.
+    ///
+    /// v4.1 only, removed in v5.0
     Allocating,
 
     /// Torrent is being downloaded and data is being transferred.
@@ -343,6 +470,11 @@ pub enum State {
 
     /// Torrent has just started downloading and is fetching metadata.
     MetaDL,
+
+    /// Torrent is forced to downloading metadata and ignores queue limits.
+    ///
+    /// Added in v5.0
+    ForcedMetaDL,
 
     /// Torrent is paused and has NOT finished downloading.
     ///
@@ -368,6 +500,11 @@ pub enum State {
     /// Torrent is forced to downloading and ignores queue limits.
     ForcedDL,
 
+    /// Torrent is queued for checking.
+    ///
+    /// v4.1 only, removed in later versions
+    QueuedForChecking,
+
     /// Checking resume data on qBt startup.
     CheckingResumeData,
 
@@ -381,18 +518,20 @@ pub enum State {
 #[cfg(test)]
 #[expect(
     clippy::indexing_slicing,
-    clippy::float_cmp,
-    reason = "indexing after length validation and comparing known fixture values"
+    reason = "indexing after length validation in integration tests"
 )]
 mod tests {
     use super::*;
     use crate::tests::init_logger;
     use crate::QBittorrentClientOptions;
+    use insta::assert_yaml_snapshot;
     use log::trace;
     use rogue_config::{OptionsProvider, YamlOptionsProvider};
+
     use std::error::Error;
 
-    const FIXTURE: &str = include_str!("tests/fixtures/torrents_response.json");
+    const FIXTURE_V4: &str = include_str!("tests/fixtures/torrents_info_v4.json");
+    const FIXTURE_V5: &str = include_str!("tests/fixtures/torrents_info_v5.json");
 
     #[tokio::test]
     #[ignore = "integration test requiring API credentials"]
@@ -419,29 +558,17 @@ mod tests {
     }
 
     #[test]
-    fn deserialize_torrents_from_fixture() {
+    fn deserialize_v4_fixture() {
         let torrents: Vec<Torrent> =
-            serde_json::from_str(FIXTURE).expect("fixture should deserialize");
-        assert_eq!(torrents.len(), 2);
-        assert_eq!(torrents[0].name, "Artist - Album [2023] [WEB FLAC]");
-        assert_eq!(torrents[0].state, State::StalledUP);
-        assert!(torrents[0].is_private.is_none());
-        assert_eq!(torrents[1].name, "Band - Live Sessions [2024] [WEB FLAC]");
-        assert_eq!(torrents[1].state, State::Downloading);
+            serde_json::from_str(FIXTURE_V4).expect("v4 fixture should deserialize");
+        assert_yaml_snapshot!(torrents);
     }
 
     #[test]
-    fn deserialize_torrent_numeric_fields() {
+    fn deserialize_v5_fixture() {
         let torrents: Vec<Torrent> =
-            serde_json::from_str(FIXTURE).expect("fixture should deserialize");
-        assert_eq!(torrents.len(), 2);
-        let torrent = &torrents[0];
-        assert_eq!(torrent.added_on, 1_700_000_000);
-        assert_eq!(torrent.completed, 104_857_600);
-        assert_eq!(torrent.size, 104_857_600);
-        assert_eq!(torrent.uploaded, 262_144_000);
-        assert_eq!(torrent.ratio, 2.5);
-        assert_eq!(torrent.progress, 1.0);
+            serde_json::from_str(FIXTURE_V5).expect("v5 fixture should deserialize");
+        assert_yaml_snapshot!(torrents);
     }
 
     #[test]

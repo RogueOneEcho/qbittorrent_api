@@ -11,6 +11,7 @@ impl QBittorrentClient {
     ///
     /// # See Also
     /// - <https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)#login>
+    /// - <https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#login>
     pub(crate) async fn login(&self) -> Result<Status, Failure<ClientAction>> {
         let method = Method::POST;
         let endpoint = "/auth/login";
