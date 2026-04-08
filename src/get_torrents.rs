@@ -165,7 +165,27 @@ pub struct Torrent {
     /// True if force start is enabled for this torrent.
     pub force_start: bool,
 
-    /// Torrent hash.
+    /// Torrent identifier, used as the canonical ID throughout the `WebUI` API.
+    ///
+    /// - For v1-only torrents: the SHA1 v1 info-hash.
+    /// - For `BitTorrent` v2 and hybrid torrents (qBittorrent 4.4+ built against
+    ///   libtorrent 2.x): the SHA256 v2 info-hash truncated to its first 20 bytes,
+    ///   **not** the v1 info-hash. The JSON value comes from
+    ///   `Torrent::id().toString()`, which calls `InfoHash::toTorrentID()` and
+    ///   in turn libtorrent's `info_hash_t::get_best()`.
+    ///
+    /// Use [`infohash_v1`](Self::infohash_v1) and [`infohash_v2`](Self::infohash_v2)
+    /// (added in v4.4) when the unambiguous v1 or v2 hash is required.
+    ///
+    /// Despite the JSON field name, qBittorrent treats this as a torrent ID
+    /// rather than an info-hash; the upstream `KEY_TORRENT_ID` constant is
+    /// marked `TODO: Rename it to 'id'`.
+    ///
+    /// # See Also
+    /// - <https://github.com/qbittorrent/qBittorrent/blob/release-5.0.0/src/webui/api/serialize/serialize_torrent.h#L41-L42>
+    /// - <https://github.com/qbittorrent/qBittorrent/blob/release-5.0.0/src/base/bittorrent/torrent.cpp#L58-L61>
+    /// - <https://github.com/qbittorrent/qBittorrent/blob/release-5.0.0/src/base/bittorrent/infohash.cpp#L80-L87>
+    /// - <https://github.com/arvidn/libtorrent/blob/v2.0.12/include/libtorrent/info_hash.hpp#L110-L115>
     pub hash: String,
 
     /// Last time (Unix Epoch) when a chunk was downloaded/uploaded.
