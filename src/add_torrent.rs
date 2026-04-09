@@ -126,8 +126,6 @@ pub struct AddTorrentOptions {
     pub skip_checking: Option<bool>,
     /// Add torrents in the paused state.
     pub paused: Option<bool>,
-    /// Create the root folder.
-    pub root_folder: Option<bool>,
     /// Rename torrent
     pub rename: Option<String>,
     /// Set torrent upload speed limit. Unit in bytes/second
@@ -170,9 +168,6 @@ impl AddTorrentOptions {
             // https://github.com/qbittorrent/qBittorrent/issues/21561#issuecomment-2558072321
             form = form.text("paused", paused.to_string());
             form = form.text("stopped", paused.to_string());
-        }
-        if let Some(root_folder) = self.root_folder {
-            form = form.text("root_folder", root_folder.to_string());
         }
         if let Some(rename) = &self.rename {
             form = form.text("rename", rename.clone());
