@@ -106,7 +106,11 @@ impl QBittorrentClient {
 
 /// Options for adding torrents to qBittorrent.
 ///
+/// - Intentionally exposes only a subset of the parameters accepted by `POST /torrents/add`.
+/// - Fields are added on demand. To request one, open an issue describing your use case.
+///
 /// # See Also
+/// - <https://github.com/RogueOneEcho/qbittorrent_api/issues>
 /// - <https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)#add-new-torrent>
 /// - <https://github.com/qbittorrent/qBittorrent/blob/release-4.1.0/src/webui/api/torrentscontroller.cpp#L453>
 /// - <https://github.com/qbittorrent/qBittorrent/blob/release-5.0.0/src/webui/api/torrentscontroller.cpp#L693>

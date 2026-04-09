@@ -342,6 +342,9 @@ pub struct Torrent {
     /// True if torrent has metadata available.
     ///
     /// Added in v5.0
+    ///
+    /// Always `None` when the server is qui's reverse proxy, even on
+    /// qBittorrent 5.0+. See <https://github.com/autobrr/qui/discussions/1754>.
     #[serde(default)]
     pub has_metadata: Option<bool>,
 
@@ -366,6 +369,9 @@ pub struct Torrent {
     /// Root path of the torrent.
     ///
     /// Added in v5.0
+    ///
+    /// Always `None` when the server is qui's reverse proxy, even on
+    /// qBittorrent 5.0+. See <https://github.com/autobrr/qui/discussions/1754>.
     #[serde(default)]
     pub root_path: Option<String>,
 }
