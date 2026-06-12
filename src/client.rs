@@ -115,12 +115,18 @@ impl QBittorrentClient {
 }
 
 /// Read the response body and parse it as a [`Status`].
+///
+/// - v5.2.0+ returns 204 on successful login
+/// - Prior versions return 200 with `Ok.` as the body
 pub(crate) async fn handle_status_response(
     method: &Method,
     endpoint: &str,
     response: reqwest::Response,
 ) -> Result<Status, Failure<ClientAction>> {
     let status_code = response.status().as_u16();
+    if status_code == 204 {
+        return Ok(Status::Success);
+    }
     let text = response.text().await.map_err(|e| {
         Failure::new(ClientAction::ReadResponseBody, e)
             .with("method", method.to_string())
