@@ -19,21 +19,21 @@ include = [
 mock = []
 
 [dependencies]
-async-trait = "0.1.89"
+async-trait = "0.1.92"
 colored = "3.1.1"
-log = { version = "0.4.32", features = ["std"] }
-reqwest = { version = "0.13.4", features = ["rustls", "json", "multipart", "stream", "cookies", "form", "query"], default-features = false }
-rogue_logging = { version = "0.7.2", features = ["miette"] }
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.150"
-thiserror = "2.0.18"
-tokio = { version = "1.52.3", features = ["full"] }
+log = { version = "0.4.34", features = ["std"] }
+reqwest = { version = "0.13.5", features = ["rustls", "json", "multipart", "stream", "cookies", "form", "query"], default-features = false }
+rogue_logging = { version = "0.7.3", features = ["miette"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+thiserror = "2.0.21"
+tokio = { version = "1.54.0", features = ["full"] }
 tower = { version = "0.5.3", features = ["util", "limit"] }
 
 [dev-dependencies]
-insta = { version = "1.48.0", features = ["yaml"] }
+insta = { version = "1.49.0", features = ["yaml"] }
 rogue_config = "0.2.0"
-rogue_logging = { version = "0.7.2", features = ["log"] }
+rogue_logging = { version = "0.7.3", features = ["log"] }
 
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }
